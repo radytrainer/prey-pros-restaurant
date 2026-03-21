@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email_verified == true && 
+         (request.auth.token.email == "rady.y@passerellesnumeriques.org" || 
+          request.auth.token.email == "anita.sovann@gmail.com")) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isStaff() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff') ||
+        isAdmin()
+      );
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'staff', 'customer'];
+    }
+
+    function isValidMenuItem(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string;
+    }
+
+    function isValidIngredient(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.stockLevel is number &&
+             data.unit is string;
+    }
+
+    function isValidOrder(data) {
+      return data.items is list &&
+             data.totalPrice is number &&
+             data.status in ['pending', 'preparing', 'ready', 'completed', 'cancelled'];
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+    }
+
+    match /menu/{menuItemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /inventory/{ingredientId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+    match /orders/{orderId} {
+      allow read: if (resource.data.userId == 'anonymous') || (isAuthenticated() && (request.auth.uid == resource.data.userId || isStaff()));
+      allow create: if isValidOrder(request.resource.data);
+      allow update: if isStaff() && isValidOrder(request.resource.data);
+    }
+
+    match /tables/{tableId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /sales/{saleId} {
+      allow read: if isAdmin();
+      allow create: if isStaff();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

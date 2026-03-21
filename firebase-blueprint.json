@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Prey Pros system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff", "customer"] },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "MenuItem": {
+      "title": "Menu Item",
+      "description": "An item on the restaurant menu.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "ingredients": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "isAvailable": { "type": "boolean" }
+      },
+      "required": ["name", "price", "category"]
+    },
+    "Ingredient": {
+      "title": "Ingredient",
+      "description": "An ingredient in the inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "stockLevel": { "type": "number" },
+        "unit": { "type": "string" },
+        "minStockLevel": { "type": "number" },
+        "supplier": { "type": "string" }
+      },
+      "required": ["name", "stockLevel", "unit"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "menuItemId": { "type": "string" },
+              "name": { "type": "string" },
+              "quantity": { "type": "number" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "preparing", "ready", "completed", "cancelled"] },
+        "tableNumber": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "totalPrice", "status", "createdAt"]
+    },
+    "Table": {
+      "title": "Table",
+      "description": "A restaurant table.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "number": { "type": "string" },
+        "status": { "type": "string", "enum": ["available", "occupied", "reserved"] },
+        "qrCodeUrl": { "type": "string" }
+      },
+      "required": ["number", "status"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "A record of a completed sale.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "amount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "amount", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/menu/{menuItemId}": { "schema": "MenuItem", "description": "Restaurant menu items" },
+    "/inventory/{ingredientId}": { "schema": "Ingredient", "description": "Inventory ingredients" },
+    "/orders/{orderId}": { "schema": "Order", "description": "Customer orders" },
+    "/tables/{tableId}": { "schema": "Table", "description": "Restaurant tables" },
+    "/sales/{saleId}": { "schema": "Sale", "description": "Sales records" }
+  }
+}

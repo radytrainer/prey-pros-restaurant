@@ -1,0 +1,5 @@
+{
+  "name": "Prey Pros Restaurant - ភោជនីយដ្ឋាន ព្រៃប្រស់",
+  "description": "A modern full-stack restaurant management application with QR-based digital menu, real-time order tracking, and comprehensive admin dashboard.",
+  "requestFramePermissions": ["camera", "geolocation"]
+}

@@ -3,6 +3,7 @@ import { Utensils, Mail, Lock, User as UserIcon, ArrowRight, Loader2 } from 'luc
 import { useAuth } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { login as backendLogin } from '../services/api';
 
 export const Login: React.FC = () => {
   const { signIn, signInEmail, signUpEmail } = useAuth();
@@ -25,11 +26,11 @@ export const Login: React.FC = () => {
       if (isSignUp) {
         await signUpEmail(email, password, name);
       } else {
-        await signInEmail(email, password);
+        await backendLogin(email, password);
       }
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      setError(err.response?.data?.error || err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }

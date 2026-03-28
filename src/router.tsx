@@ -13,6 +13,7 @@ import { Tables } from './pages/Tables';
 import { Suppliers } from './pages/Suppliers';
 import { CustomerMenu } from './pages/CustomerMenu';
 import { Profile } from './pages/Profile';
+import { Users } from './pages/Users';
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
           { path: 'tables', element: <Tables /> },
           { path: 'suppliers', element: <Suppliers /> },
           { path: 'profile', element: <Profile /> },
+          { path: 'users', element: <Users /> },
         ],
       },
     ],

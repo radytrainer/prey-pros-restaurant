@@ -1,22 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  ShoppingCart, 
+import {
+  Plus,
+  Search,
+  Filter,
+  ShoppingCart,
   ChevronRight,
   PlusCircle,
   MinusCircle,
   Trash2,
   X
 } from 'lucide-react';
-import { getMenuItems, createOrder } from '../services/firebaseService';
+import { fetchMenu, fetchCategories } from '../services/api';
 import { useAuth } from '../components/AuthContext';
 import type { MenuItem, OrderItem } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const Menu: React.FC = () => {
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -24,15 +25,16 @@ export const Menu: React.FC = () => {
   const { profile } = useAuth();
 
   useEffect(() => {
-    getMenuItems().then(setItems);
+    fetchMenu().then(setItems);
+    fetchCategories().then((cats) => setCategories(['All', ...new Set(cats.map((c: any) => c.name))]));
   }, []);
 
-  const categories = ['All', ...new Set(items.map(i => i.category))];
 
-  const filteredItems = items.filter(item => 
+
+  const filteredItems = items.filter(item =>
     (category === 'All' || item.category === category) &&
-    (item.name.toLowerCase().includes(search.toLowerCase()) || 
-     item.description.toLowerCase().includes(search.toLowerCase()))
+    (item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.description.toLowerCase().includes(search.toLowerCase()))
   );
 
   const addToCart = (item: MenuItem) => {
@@ -98,7 +100,7 @@ export const Menu: React.FC = () => {
               className="w-full pl-12 pr-4 py-2.5 sm:py-3 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-amber-500/20 transition-all outline-none text-sm shadow-sm"
             />
           </div>
-          <button 
+          <button
             onClick={() => setIsCartOpen(true)}
             className="relative p-2.5 sm:p-3 bg-amber-600 text-white rounded-2xl hover:bg-amber-700 transition-all shadow-lg shadow-amber-200"
           >
@@ -117,11 +119,10 @@ export const Menu: React.FC = () => {
           <button
             key={cat}
             onClick={() => setCategory(cat)}
-            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap shadow-sm ${
-              category === cat 
-                ? 'bg-amber-600 text-white shadow-md shadow-amber-100' 
+            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap shadow-sm ${category === cat
+                ? 'bg-amber-600 text-white shadow-md shadow-amber-100'
                 : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-100'
-            }`}
+              }`}
           >
             {cat}
           </button>
@@ -138,9 +139,9 @@ export const Menu: React.FC = () => {
             className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm hover:shadow-xl transition-all group"
           >
             <div className="h-48 overflow-hidden relative">
-              <img 
-                src={item.imageUrl || `https://picsum.photos/seed/${item.name}/400/300`} 
-                alt={item.name} 
+              <img
+                src={item.imageUrl || `https://picsum.photos/seed/${item.name}/400/300`}
+                alt={item.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 referrerPolicy="no-referrer"
               />
@@ -157,11 +158,10 @@ export const Menu: React.FC = () => {
               <button
                 onClick={() => addToCart(item)}
                 disabled={!item.isAvailable}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all ${
-                  item.isAvailable 
-                    ? 'bg-stone-900 text-white hover:bg-amber-600 shadow-lg shadow-stone-200' 
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all ${item.isAvailable
+                    ? 'bg-stone-900 text-white hover:bg-amber-600 shadow-lg shadow-stone-200'
                     : 'bg-stone-100 text-stone-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 <Plus className="w-5 h-5" />
                 {item.isAvailable ? 'Add to Cart / បញ្ជាទិញ' : 'Out of Stock / អស់ពីស្តុក'}
@@ -223,7 +223,7 @@ export const Menu: React.FC = () => {
                   <div className="text-center py-20">
                     <ShoppingCart className="w-16 h-16 text-stone-100 mx-auto mb-6" />
                     <p className="text-stone-400 font-medium">Your cart is empty. / កន្ត្រកទំនិញទទេ</p>
-                    <button 
+                    <button
                       onClick={() => setIsCartOpen(false)}
                       className="mt-4 text-amber-600 font-bold hover:underline"
                     >

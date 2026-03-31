@@ -16,15 +16,11 @@ import { useNavigate } from 'react-router-dom';
 import { subscribeToIngredients, createIngredient } from '../services/firebaseService';
 import type { Ingredient } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { SupplierCard, type Supplier } from '../components/SupplierCard';
 
 export const Inventory: React.FC = () => {
   const navigate = useNavigate();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [search, setSearch] = useState('');
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
-  const [showSuppliers, setShowSuppliers] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newIngredient, setNewIngredient] = useState({
     name: '',
@@ -63,47 +59,6 @@ export const Inventory: React.FC = () => {
 
   const lowStockCount = ingredients.filter(i => i.stockLevel <= i.minStockLevel).length;
 
-  const findSuppliers = async () => {
-    setLoadingSuppliers(true);
-    setShowSuppliers(true);
-    try {
-      // Mock coordinates for demo, or use navigator.geolocation
-      const lat = 11.5564; // Phnom Penh
-      const lng = 104.9282;
-      
-      // We'll use a simplified version of the Suppliers.tsx logic here
-      // In a real app, we'd probably share the service logic
-      const initialData: Supplier[] = [
-        {
-          name: "Lee's Food Service Ltd",
-          address: "No. 262B St. 598, Phnom Penh, Cambodia",
-          rating: 4.1,
-          category: "Wholesaler",
-          hours: "8:00 AM - 8:00 PM (Daily)"
-        },
-        {
-          name: "Lee's Food Warehouse",
-          address: "Phnom Penh, Cambodia",
-          rating: 3.6,
-          category: "Wholesaler",
-          hours: "M-F 8:00 AM - 5:00 PM, Sat 8:00 AM - 3:00 PM"
-        },
-        {
-          name: "Sela Pepper Cambodia",
-          address: "66c Preah Sihanouk Blvd (274), Phnom Penh, Cambodia",
-          rating: 4.8,
-          category: "Manufacturer",
-          hours: "M-Sat 8:00 AM - 6:00 PM"
-        }
-      ];
-      setSuppliers(initialData);
-    } catch (error) {
-      console.error('Error finding suppliers:', error);
-    } finally {
-      setLoadingSuppliers(false);
-    }
-  };
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -112,14 +67,6 @@ export const Inventory: React.FC = () => {
           <p className="text-stone-500 mt-1">Track and manage your kitchen supplies.</p>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={findSuppliers}
-            disabled={loadingSuppliers}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm font-semibold text-stone-700 hover:bg-stone-50 transition-colors shadow-sm disabled:opacity-50"
-          >
-            <MapPin className="w-4 h-4 text-amber-600" />
-            {loadingSuppliers ? 'Searching...' : 'Find Nearby Suppliers / ស្វែងរកអ្នកផ្គត់ផ្គង់'}
-          </button>
           <button 
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition-colors shadow-md shadow-amber-200"
@@ -258,58 +205,6 @@ export const Inventory: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {showSuppliers && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50 p-8 rounded-[40px] border border-amber-100"
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-amber-600 shadow-sm">
-                <MapPin className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-amber-900">
-                  Nearby Suppliers (AI Insights) / អ្នកផ្គត់ផ្គង់នៅជិតៗ
-                </h2>
-                <p className="text-sm text-amber-700">Based on your current location in Phnom Penh</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowSuppliers(false)} 
-              className="p-2 hover:bg-amber-100 rounded-xl transition-colors text-amber-600"
-            >
-              <Plus className="w-6 h-6 rotate-45" />
-            </button>
-          </div>
-
-          {loadingSuppliers ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <RefreshCw className="w-8 h-8 text-amber-600 animate-spin" />
-              <p className="text-amber-800 font-medium">Analyzing nearby suppliers...</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <AnimatePresence mode="popLayout">
-                {suppliers.map((supplier, i) => (
-                  <SupplierCard key={i} supplier={supplier} index={i} />
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-          
-          <div className="mt-8 pt-6 border-t border-amber-100 flex justify-center">
-            <button 
-              onClick={() => navigate('/suppliers')}
-              className="text-sm font-bold text-amber-600 hover:text-amber-800 transition-colors flex items-center gap-2"
-            >
-              View All Suppliers <ExternalLink className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
-      )}
 
       <div className="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-stone-50 flex items-center justify-between gap-4">

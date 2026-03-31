@@ -14,12 +14,17 @@ import {
   Database,
   Download
 } from 'lucide-react';
-import { getMenuItems, getTables, createMenuItem, createTable, updateTable, deleteTable } from '../services/firebaseService';
+import { getMenuItems, getTables, createMenuItem, updateMenuItem, deleteMenuItem, createTable, updateTable, deleteTable } from '../services/firebaseService';
 import { generateMenuItemImage } from '../services/gemini';
 import { SAMPLE_MENU_ITEMS } from '../constants';
-import type { MenuItem, Table, MenuItemIngredient } from '../types';
+import { MenuItem, Table, MenuItemIngredient } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
+
+const getEnglishName = (name: string) => {
+  const parts = name.split('/');
+  return parts.find(p => /[a-zA-Z]/.test(p))?.trim() || parts[0].trim();
+};
 
 export const Admin: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -30,6 +35,7 @@ export const Admin: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
+  const [editingMenuItemId, setEditingMenuItemId] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<Partial<MenuItem>>({
     name: '',
     description: '',
@@ -75,7 +81,8 @@ export const Admin: React.FC = () => {
     if (!newItem.name) return;
     setIsGenerating(true);
     try {
-      const url = await generateMenuItemImage(newItem.name);
+      const englishName = getEnglishName(newItem.name);
+      const url = await generateMenuItemImage(englishName);
       if (url) setNewItem(prev => ({ ...prev, imageUrl: url }));
     } catch (error) {
       console.error('Error generating image:', error);
@@ -105,10 +112,15 @@ export const Admin: React.FC = () => {
   const handleSaveItem = async () => {
     if (!newItem.name || !newItem.price) return;
     try {
-      await createMenuItem(newItem as Omit<MenuItem, 'id'>);
+      if (editingMenuItemId) {
+        await updateMenuItem(editingMenuItemId, newItem);
+      } else {
+        await createMenuItem(newItem as Omit<MenuItem, 'id'>);
+      }
       const updatedItems = await getMenuItems();
       setMenuItems(updatedItems);
       setIsModalOpen(false);
+      setEditingMenuItemId(null);
       setNewItem({
         name: '',
         description: '',
@@ -121,6 +133,23 @@ export const Admin: React.FC = () => {
       setCurrentIngredient({ name: '', quantity: 0, unit: 'kg' });
     } catch (error) {
       console.error('Error saving item:', error);
+    }
+  };
+
+  const handleEditItem = (item: MenuItem) => {
+    setEditingMenuItemId(item.id);
+    setNewItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteMenuItem = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this menu item? / តើអ្នកប្រាកដជាចង់លុបមុខម្ហូបនេះមែនទេ?')) return;
+    try {
+      await deleteMenuItem(id);
+      const updatedItems = await getMenuItems();
+      setMenuItems(updatedItems);
+    } catch (error) {
+      console.error('Error deleting item:', error);
     }
   };
 
@@ -223,7 +252,20 @@ export const Admin: React.FC = () => {
                 Seed Data / បញ្ចូលទិន្នន័យ
               </button>
               <button 
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  setEditingMenuItemId(null);
+                  setNewItem({
+                    name: '',
+                    description: '',
+                    price: 0,
+                    category: 'Main Course',
+                    timeCategory: 'Morning',
+                    isAvailable: true,
+                    ingredients: []
+                  });
+                  setCurrentIngredient({ name: '', quantity: 0, unit: 'kg' });
+                  setIsModalOpen(true);
+                }}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-2xl font-bold hover:bg-amber-700 transition-all shadow-lg shadow-amber-200"
               >
                 <Plus className="w-5 h-5" />
@@ -233,19 +275,48 @@ export const Admin: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menuItems.map((item) => (
+            {menuItems.map((item) => {
+              const nameParts = item.name.split('/');
+              const englishName = getEnglishName(item.name);
+              const isKhmerFirst = /[\u1780-\u17FF]/.test(nameParts[0]);
+              const khmerPart = isKhmerFirst ? nameParts[0].trim() : (nameParts[1]?.trim() || '');
+              
+              const displayTitle = khmerPart && englishName && khmerPart !== englishName 
+                ? `${khmerPart} / ${englishName}` 
+                : item.name;
+
+              const rawImg = item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : '');
+              const finalImage = rawImg && !rawImg.includes('unsplash.com') 
+                ? rawImg 
+                : `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`;
+
+              return (
               <div key={item.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex gap-4 group">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100">
-                  <img src={item.imageUrl || `https://picsum.photos/seed/${item.name}/100/100`} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 relative bg-stone-50">
+                  <img 
+                    src={finalImage} 
+                    alt={displayTitle} 
+                    className="w-full h-full object-cover" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`;
+                    }}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-gray-900 truncate group-hover:text-amber-600 transition-colors">{item.name}</h3>
+                    <h3 className="font-bold text-gray-900 truncate group-hover:text-amber-600 transition-colors" title={displayTitle}>{displayTitle}</h3>
                     <div className="flex gap-1">
-                      <button className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all">
+                      <button 
+                        onClick={() => handleEditItem(item)}
+                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                      >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                      <button 
+                        onClick={() => handleDeleteMenuItem(item.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -268,7 +339,7 @@ export const Admin: React.FC = () => {
                   )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       ) : (
@@ -345,7 +416,7 @@ export const Admin: React.FC = () => {
               className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-3xl shadow-2xl z-50 overflow-hidden"
             >
               <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                <h2 className="text-2xl font-bold text-gray-900">Add New Menu Item</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{editingMenuItemId ? 'Edit Menu Item' : 'Add New Menu Item'}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
                   <X className="w-6 h-6 text-gray-400" />
                 </button>

@@ -27,6 +27,13 @@ export const Tables: React.FC = () => {
 
   const handleAddTable = async () => {
     if (!newTableNumber) return;
+    
+    // Prevent duplicate table numbers
+    if (tables.some(t => t.number === newTableNumber)) {
+      alert(`Table number ${newTableNumber} already exists! / លេខតុ ${newTableNumber} មានរួចហើយ!`);
+      return;
+    }
+
     try {
       await createTable({
         number: newTableNumber,

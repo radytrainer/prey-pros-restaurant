@@ -127,6 +127,26 @@ export const createMenuItem = async (item: Omit<MenuItem, 'id'>): Promise<string
   }
 };
 
+export const updateMenuItem = async (id: string, item: Partial<MenuItem>): Promise<void> => {
+  const path = `menu/${id}`;
+  try {
+    const docRef = doc(db, 'menu', id);
+    await updateDoc(docRef, item);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+};
+
+export const deleteMenuItem = async (id: string): Promise<void> => {
+  const path = `menu/${id}`;
+  try {
+    const docRef = doc(db, 'menu', id);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+};
+
 // Inventory
 export const getIngredients = async (): Promise<Ingredient[]> => {
   const path = 'inventory';

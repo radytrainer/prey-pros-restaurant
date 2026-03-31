@@ -65,7 +65,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({ supplier, index = 0 
           className="relative block w-full h-32 mb-4 rounded-2xl overflow-hidden group/map border border-stone-100"
         >
           <img 
-            src={`https://picsum.photos/seed/${encodeURIComponent(supplier.name)}/400/200?blur=2`}
+            src={`https://image.pollinations.ai/prompt/${encodeURIComponent('map satellite view ' + supplier.name)}?width=400&height=200&nologo=true`}
             alt="Map preview"
             className="w-full h-full object-cover grayscale opacity-50 group-hover/map:grayscale-0 group-hover/map:opacity-100 transition-all duration-500"
             referrerPolicy="no-referrer"

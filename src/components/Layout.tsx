@@ -10,7 +10,7 @@ export const Layout: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         <Header onMenuClick={() => setIsSidebarOpen(true)} />
         <main className="p-4 sm:p-8 flex-1 overflow-auto">
           <motion.div

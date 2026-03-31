@@ -3,6 +3,7 @@ import { Bell, Search, User, Menu, LogOut, ChevronDown, Settings } from 'lucide-
 import { useAuth } from './AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { subscribeToOrders } from '../services/firebaseService';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -13,6 +14,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -21,6 +24,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToOrders((orders) => {
+      setPendingOrdersCount(orders.filter(o => o.status === 'pending').length);
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -48,7 +58,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       <div className="flex items-center gap-2 sm:gap-4">
         <button className="p-2.5 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors relative">
           <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+          {pendingOrdersCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-white animate-pulse">
+              {pendingOrdersCount}
+            </span>
+          )}
         </button>
         <div className="h-8 w-px bg-gray-100 mx-1 sm:mx-2"></div>
         

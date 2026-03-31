@@ -7,10 +7,8 @@ import { Login } from './pages/Login';
 import { Menu } from './pages/Menu';
 import { Inventory } from './pages/Inventory';
 import { Kitchen } from './pages/Kitchen';
-import { Reports } from './pages/Reports';
 import { Admin } from './pages/Admin';
 import { Tables } from './pages/Tables';
-import { Suppliers } from './pages/Suppliers';
 import { CustomerMenu } from './pages/CustomerMenu';
 import { Profile } from './pages/Profile';
 import { Users } from './pages/Users';
@@ -31,10 +29,8 @@ const router = createBrowserRouter([
           { path: 'menu', element: <Menu /> },
           { path: 'inventory', element: <Inventory /> },
           { path: 'kitchen', element: <Kitchen /> },
-          { path: 'reports', element: <Reports /> },
           { path: 'admin', element: <Admin /> },
           { path: 'tables', element: <Tables /> },
-          { path: 'suppliers', element: <Suppliers /> },
           { path: 'profile', element: <Profile /> },
           { path: 'users', element: <Users /> },
         ],

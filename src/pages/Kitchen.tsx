@@ -13,14 +13,39 @@ import {
 import { subscribeToOrders, updateOrderStatus } from '../services/firebaseService';
 import type { Order, OrderStatus } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'react-hot-toast';
 
 export const Kitchen: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const isInitialLoad = React.useRef(true);
+  const previousOrders = React.useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders(setOrders);
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (orders.length === 0) return;
+
+    if (isInitialLoad.current) {
+      orders.forEach(o => previousOrders.current.set(o.id, o.status));
+      isInitialLoad.current = false;
+      return;
+    }
+
+    orders.forEach(o => {
+      const prevStatus = previousOrders.current.get(o.id);
+      if (!prevStatus && o.status === 'pending') {
+        toast.success(`New order received for Table ${o.tableNumber}! / កម្ម៉ង់ថ្មីពីតុ ${o.tableNumber}!`, { 
+          icon: '🔔', 
+          duration: 5000,
+          style: { background: '#f59e0b', color: '#fff', fontWeight: 'bold' } 
+        });
+      }
+      previousOrders.current.set(o.id, o.status);
+    });
+  }, [orders]);
 
   const activeOrders = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
 

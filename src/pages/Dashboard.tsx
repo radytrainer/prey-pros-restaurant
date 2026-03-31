@@ -24,6 +24,7 @@ import {
   Area
 } from 'recharts';
 import { getSales, subscribeToOrders, createOrder, getMenuItems } from '../services/firebaseService';
+import { seedAdminData } from '../services/seedAdminData';
 import type { Order, Sale, MenuItem } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -113,6 +114,12 @@ export const Dashboard: React.FC = () => {
             className="flex-1 sm:flex-none px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition-colors shadow-md shadow-amber-200"
           >
             Add New Order / បន្ថែមការកម្ម៉ង់
+          </button>
+          <button 
+            onClick={seedAdminData}
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors shadow-md shadow-red-200"
+          >
+            Seed Admin Data (Testing)
           </button>
         </div>
       </div>

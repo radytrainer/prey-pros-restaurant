@@ -11,9 +11,15 @@ import {
   X
 } from 'lucide-react';
 import { fetchMenu, fetchCategories } from '../services/api';
+import { createOrder } from '../services/firebaseService';
 import { useAuth } from '../components/AuthContext';
 import type { MenuItem, OrderItem } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+
+const getEnglishName = (name: string) => {
+  const parts = name.split('/');
+  return parts.find(p => /[a-zA-Z]/.test(p))?.trim() || parts[0].trim();
+};
 
 export const Menu: React.FC = () => {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -26,7 +32,7 @@ export const Menu: React.FC = () => {
 
   useEffect(() => {
     fetchMenu().then(setItems);
-    fetchCategories().then((cats) => setCategories(['All', ...new Set(cats.map((c: any) => c.name))]));
+    fetchCategories().then((cats) => setCategories(['All', ...Array.from(new Set(cats.map((c: any) => String(c.name)))) as string[]]));
   }, []);
 
 
@@ -43,7 +49,8 @@ export const Menu: React.FC = () => {
       if (existing) {
         return prev.map(i => i.menuItemId === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { menuItemId: item.id, name: item.name, quantity: 1, price: item.price }];
+      const englishName = getEnglishName(item.name);
+      return [...prev, { menuItemId: item.id, name: item.name, quantity: 1, price: item.price, imageUrl: item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`) }];
     });
   };
 
@@ -130,7 +137,13 @@ export const Menu: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {filteredItems.map((item, i) => (
+        {filteredItems.map((item, i) => {
+          const rawImg = item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : '');
+          const finalImage = rawImg && !rawImg.includes('unsplash.com') 
+            ? rawImg 
+            : `https://image.pollinations.ai/prompt/${encodeURIComponent(getEnglishName(item.name) + ' delicious food cinematic')}?width=400&height=300&nologo=true`;
+
+          return (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -138,12 +151,15 @@ export const Menu: React.FC = () => {
             transition={{ delay: i * 0.05 }}
             className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm hover:shadow-xl transition-all group"
           >
-            <div className="h-48 overflow-hidden relative">
+            <div className="h-48 overflow-hidden relative bg-stone-50">
               <img
-                src={item.imageUrl || `https://picsum.photos/seed/${item.name}/400/300`}
+                src={finalImage}
                 alt={item.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(getEnglishName(item.name) + ' delicious food cinematic')}?width=400&height=300&nologo=true`;
+                }}
               />
               <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-sm font-bold text-amber-600 shadow-sm">
                 ${item.price}
@@ -168,7 +184,7 @@ export const Menu: React.FC = () => {
               </button>
             </div>
           </motion.div>
-        ))}
+        )})}
       </div>
 
       <AnimatePresence>
@@ -199,7 +215,7 @@ export const Menu: React.FC = () => {
                 {cart.map((item) => (
                   <div key={item.menuItemId} className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center border border-stone-100 overflow-hidden">
-                      <img src={`https://picsum.photos/seed/${item.name}/100/100`} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-stone-900 truncate">{item.name}</h4>

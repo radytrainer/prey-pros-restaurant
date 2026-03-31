@@ -23,6 +23,12 @@ import { getMenuItems, createOrder, subscribeToOrders } from '../services/fireba
 import { useAuth } from '../components/AuthContext';
 import type { MenuItem, OrderItem, Order, PaymentMethod, TimeCategory } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'react-hot-toast';
+
+const getEnglishName = (name: string) => {
+  const parts = name.split('/');
+  return parts.find(p => /[a-zA-Z]/.test(p))?.trim() || parts[0].trim();
+};
 
 export const CustomerMenu: React.FC = () => {
   const { tableId } = useParams<{ tableId: string }>();
@@ -42,6 +48,9 @@ export const CustomerMenu: React.FC = () => {
   const [lastOrder, setLastOrder] = useState<{ items: OrderItem[], total: number } | null>(null);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const { profile, user } = useAuth();
+  
+  const isInitialLoad = React.useRef(true);
+  const previousOrders = React.useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     // Subscribe to all active orders to calculate kitchen load
@@ -64,14 +73,34 @@ export const CustomerMenu: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const userId = profile?.uid || user?.uid;
-    const filters = userId ? { userId } : { tableNumber: tableId };
+    const filters = { tableNumber: tableId };
     
-    const unsubscribe = subscribeToOrders((orders) => {
-      setMyOrders(orders);
+    const unsubscribe = subscribeToOrders((newOrders) => {
+      setMyOrders(newOrders);
+      
+      if (newOrders.length === 0) return;
+
+      if (isInitialLoad.current) {
+        newOrders.forEach(o => previousOrders.current.set(o.id, o.status));
+        isInitialLoad.current = false;
+        return;
+      }
+
+      newOrders.forEach(o => {
+        const prevStatus = previousOrders.current.get(o.id);
+        if (prevStatus && prevStatus !== o.status && o.status === 'ready') {
+          toast.success(`Your order is ready to be served! / ការកម្ម៉ង់របស់អ្នករួចរាល់ហើយ!`, { 
+            icon: '🎉', 
+            duration: 6000,
+            style: { background: '#10b981', color: '#fff', fontWeight: 'bold' }
+          });
+        }
+        previousOrders.current.set(o.id, o.status);
+      });
     }, filters);
+    
     return () => unsubscribe();
-  }, [profile, user, tableId]);
+  }, [tableId]);
 
   const categories = ['All', ...new Set(items.map(i => i.category))];
   const timeCategories: (TimeCategory | 'All')[] = ['All', 'Morning', 'Afternoon', 'Evening', 'Night'];
@@ -89,7 +118,8 @@ export const CustomerMenu: React.FC = () => {
       if (existing) {
         return prev.map(i => i.menuItemId === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { menuItemId: item.id, name: item.name, quantity: 1, price: item.price }];
+      const englishName = getEnglishName(item.name);
+      return [...prev, { menuItemId: item.id, name: item.name, quantity: 1, price: item.price, imageUrl: item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`) } as OrderItem & { imageUrl?: string }];
     });
   };
 
@@ -227,7 +257,7 @@ export const CustomerMenu: React.FC = () => {
                 <Clock className="w-4 h-4 text-amber-600" />
                 Time Category / ប្រភេទតាមពេលវេលា
               </h2>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {timeCategories.map((tc) => (
                   <button
                     key={tc}
@@ -241,6 +271,7 @@ export const CustomerMenu: React.FC = () => {
                     {tc}
                   </button>
                 ))}
+                <div className="w-1 shrink-0" />
               </div>
             </div>
 
@@ -257,7 +288,7 @@ export const CustomerMenu: React.FC = () => {
                 />
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {categories.map((cat) => (
                   <button
                     key={cat}
@@ -271,12 +302,19 @@ export const CustomerMenu: React.FC = () => {
                     {cat}
                   </button>
                 ))}
+                <div className="w-1 shrink-0" />
               </div>
             </div>
 
             {/* Menu Items */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredItems.map((item, i) => (
+              {filteredItems.map((item, i) => {
+                const rawImg = item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : '');
+                const finalImage = rawImg && !rawImg.includes('unsplash.com') 
+                  ? rawImg 
+                  : `https://image.pollinations.ai/prompt/${encodeURIComponent(getEnglishName(item.name) + ' delicious food cinematic')}?width=400&height=400&nologo=true`;
+
+                return (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -284,12 +322,15 @@ export const CustomerMenu: React.FC = () => {
                   transition={{ delay: i * 0.05 }}
                   className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm flex flex-col group"
                 >
-                  <div className="aspect-square relative flex-shrink-0">
+                  <div className="aspect-square relative flex-shrink-0 bg-stone-50">
                     <img 
-                      src={item.imageUrl || `https://picsum.photos/seed/${item.name}/400/400`} 
+                      src={finalImage} 
                       alt={item.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(getEnglishName(item.name) + ' delicious food cinematic')}?width=400&height=400&nologo=true`;
+                      }}
                     />
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-600 shadow-sm">
                       ${item.price}
@@ -324,7 +365,7 @@ export const CustomerMenu: React.FC = () => {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+              )})}
             </div>
           </>
         ) : (
@@ -353,12 +394,18 @@ export const CustomerMenu: React.FC = () => {
                     key={order.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm space-y-4"
+                    className={`p-6 rounded-[32px] border shadow-sm space-y-4 transition-colors duration-500 ${
+                      order.status === 'completed' 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-white border-stone-100'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Order #{order.id.slice(-6)}</p>
-                        <p className="text-xs text-stone-500">{new Date(order.createdAt).toLocaleTimeString()}</p>
+                        <p className="text-xs text-stone-500 font-medium">
+                          {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
                       <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${getStatusColor(order.status)}`}>
                         {order.status}
@@ -594,10 +641,24 @@ export const CustomerMenu: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    {cart.map((item) => (
+                    {cart.map((item) => {
+                      const rawImg = (item as any).imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : '');
+                      const finalImage = rawImg && !rawImg.includes('unsplash.com') 
+                        ? rawImg 
+                        : `https://image.pollinations.ai/prompt/${encodeURIComponent(getEnglishName(item.name) + ' delicious food cinematic')}?width=100&height=100&nologo=true`;
+
+                      return (
                       <div key={item.menuItemId} className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-stone-50 rounded-2xl flex items-center justify-center border border-stone-100 overflow-hidden flex-shrink-0">
-                          <img src={`https://picsum.photos/seed/${item.name}/100/100`} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <img 
+                            src={finalImage} 
+                            alt={item.name} 
+                            className="w-full h-full object-cover" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(getEnglishName(item.name) + ' delicious food cinematic')}?width=100&height=100&nologo=true`;
+                            }}
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-stone-900 truncate text-sm">{item.name}</h4>
@@ -616,7 +677,7 @@ export const CustomerMenu: React.FC = () => {
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
-                    ))}
+                    )})}
                     {cart.length === 0 && (
                       <div className="text-center py-12">
                         <ShoppingCart className="w-12 h-12 text-stone-100 mx-auto mb-4" />

@@ -5,16 +5,16 @@ import {
   Utensils, 
   Package, 
   ChefHat, 
-  BarChart3, 
   Settings, 
   LogOut,
   Users,
-  QrCode,
-  Truck
+  QrCode
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { subscribeToOrders } from '../services/firebaseService';
+import { useState, useEffect } from 'react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -27,16 +27,24 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { profile, logout, isAdmin, isStaff } = useAuth();
+  
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+  useEffect(() => {
+    if (!isStaff) return;
+    const unsubscribe = subscribeToOrders((orders) => {
+      setPendingOrdersCount(orders.filter(o => o.status === 'pending').length);
+    });
+    return () => unsubscribe();
+  }, [isStaff]);
 
   const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard / ផ្ទាំងគ្រប់គ្រង', show: true },
-    { to: '/menu', icon: Utensils, label: 'Menu / បញ្ជីមុខម្ហូប', show: true },
-    { to: '/inventory', icon: Package, label: 'Inventory / សន្និធិ', show: isStaff },
-    { to: '/kitchen', icon: ChefHat, label: 'Kitchen / ផ្ទះបាយ', show: isStaff },
-    { to: '/reports', icon: BarChart3, label: 'Reports / របាយការណ៍', show: isAdmin },
-    { to: '/tables', icon: QrCode, label: 'Tables / តុ', show: isAdmin },
-    { to: '/suppliers', icon: Truck, label: 'Suppliers / អ្នកផ្គត់ផ្គង់', show: isStaff },
-    { to: '/admin', icon: Settings, label: 'Admin / ការកំណត់', show: isAdmin },
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard', show: true },
+    { to: '/menu', icon: Utensils, label: 'Menu', show: true },
+    { to: '/inventory', icon: Package, label: 'Inventory', show: isStaff },
+    { to: '/kitchen', icon: ChefHat, label: 'Kitchen', show: isStaff, badge: pendingOrdersCount },
+    { to: '/tables', icon: QrCode, label: 'Tables', show: isAdmin },
+    { to: '/admin', icon: Settings, label: 'Admin', show: isAdmin },
   ];
 
   return (
@@ -51,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       />
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col h-screen z-50 transition-transform duration-300 lg:translate-x-0 lg:static",
+        "fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col h-screen z-50 transition-transform duration-300 lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 flex flex-col h-full">
@@ -79,17 +87,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   if (window.innerWidth < 1024) onClose();
                 }}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
                   isActive 
                     ? "bg-amber-50 text-amber-600 font-medium shadow-sm" 
                     : "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
                 )}
               >
-                <item.icon className={cn(
-                  "w-5 h-5 transition-transform duration-200 group-hover:scale-110",
-                  "group-[.active]:text-amber-600"
-                )} />
-                {item.label}
+                <div className="relative">
+                  <item.icon className={cn(
+                    "w-5 h-5 transition-transform duration-200 group-hover:scale-110",
+                    "group-[.active]:text-amber-600"
+                  )} />
+                  {item.badge && item.badge > 0 ? (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-pulse">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </div>
+                <span className="flex-1">{item.label}</span>
               </NavLink>
             ))}
           </nav>

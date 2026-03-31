@@ -73,20 +73,25 @@ export const CustomerMenu: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const filters = { tableNumber: tableId };
+    if (!tableId) return;
+    const filters = { tableNumber: tableId.trim() };
     
     const unsubscribe = subscribeToOrders((newOrders) => {
-      setMyOrders(newOrders);
+      // Sort orders by creation date
+      const sortedOrders = [...newOrders].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setMyOrders(sortedOrders);
       
-      if (newOrders.length === 0) return;
+      if (sortedOrders.length === 0) return;
 
       if (isInitialLoad.current) {
-        newOrders.forEach(o => previousOrders.current.set(o.id, o.status));
+        sortedOrders.forEach(o => previousOrders.current.set(o.id, o.status));
         isInitialLoad.current = false;
         return;
       }
 
-      newOrders.forEach(o => {
+      sortedOrders.forEach(o => {
         const prevStatus = previousOrders.current.get(o.id);
         if (prevStatus && prevStatus !== o.status && o.status === 'ready') {
           toast.success(`Your order is ready to be served! / ការកម្ម៉ង់របស់អ្នករួចរាល់ហើយ!`, { 
@@ -212,11 +217,15 @@ export const CustomerMenu: React.FC = () => {
           </div>
           <button 
             onClick={() => setActiveTab(activeTab === 'menu' ? 'orders' : 'menu')}
-            className="p-3 bg-stone-100 text-stone-600 rounded-2xl hover:bg-stone-200 transition-all relative"
+            className={`p-3 rounded-2xl transition-all relative ${
+              activeTab === 'orders' ? 'bg-amber-600 text-white shadow-lg shadow-amber-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+            }`}
           >
             {activeTab === 'menu' ? <Timer className="w-6 h-6" /> : <Utensils className="w-6 h-6" />}
             {activeTab === 'menu' && myOrders.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full border-2 border-white" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">
+                {myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length}
+              </span>
             )}
           </button>
           <button 
@@ -367,6 +376,48 @@ export const CustomerMenu: React.FC = () => {
                 </motion.div>
               )})}
             </div>
+
+            {/* Floating Order Progress Banner */}
+            <AnimatePresence>
+              {myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length > 0 && (
+                <motion.div
+                  initial={{ y: 100, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 100, opacity: 0 }}
+                  className="fixed bottom-6 left-6 right-6 z-40"
+                >
+                  <button
+                    onClick={() => setActiveTab('orders')}
+                    className="w-full bg-white border border-stone-100 p-4 rounded-[28px] shadow-2xl flex items-center gap-4 group active:scale-95 transition-all"
+                  >
+                    <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 flex-shrink-0 animate-pulse">
+                      <Timer className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="text-xs font-bold text-stone-900 truncate">
+                          {myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled')[0].status.toUpperCase()}
+                        </p>
+                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Live Status</span>
+                      </div>
+                      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-amber-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ 
+                            width: myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled')[0].status === 'pending' ? '25%' : 
+                                   myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled')[0].status === 'preparing' ? '60%' : '90%'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 bg-stone-50 rounded-full flex items-center justify-center text-stone-400 group-hover:bg-amber-50 group-hover:text-amber-600 transition-colors">
+                      <ChevronRight className="w-5 h-5" />
+                    </div>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         ) : (
           /* Order Tracking View */
@@ -416,7 +467,7 @@ export const CustomerMenu: React.FC = () => {
                     <div className="space-y-4 py-2">
                       <div className="relative">
                         {/* Progress Line */}
-                        <div className="absolute top-1/2 left-0 right-0 h-1 bg-stone-100 -translate-y-1/2 rounded-full overflow-hidden">
+                        <div className="absolute top-1/2 left-4 right-4 h-2 bg-stone-100 -translate-y-1/2 rounded-full overflow-hidden">
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ 
@@ -424,9 +475,10 @@ export const CustomerMenu: React.FC = () => {
                                      order.status === 'preparing' ? '50%' : 
                                      order.status === 'ready' || order.status === 'completed' ? '100%' : '0%'
                             }}
-                            className={`h-full transition-all duration-700 ${
+                            className={`h-full ${
                               order.status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'
                             }`}
+                            transition={{ duration: 0.7, ease: "easeOut" }}
                           />
                         </div>
 
@@ -444,11 +496,11 @@ export const CustomerMenu: React.FC = () => {
                             const Icon = stage.icon;
 
                             return (
-                              <div key={stage.id} className="flex flex-col items-center gap-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all duration-500 ${
+                              <div key={stage.id} className="flex flex-col items-center gap-2 group">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-500 ${
                                   isPast ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white border-2 border-stone-100 text-stone-300'
                                 } ${isCurrent ? 'scale-110 ring-4 ring-amber-100' : ''}`}>
-                                  <Icon className="w-4 h-4" />
+                                  <Icon className={`w-5 h-5 ${isCurrent ? 'animate-pulse' : ''}`} />
                                 </div>
                                 <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-500 ${
                                   isPast ? 'text-stone-900' : 'text-stone-300'

@@ -194,12 +194,16 @@ export const createOrder = async (order: Omit<Order, 'id'>): Promise<string> => 
 
 export const subscribeToOrders = (callback: (orders: Order[]) => void, filters?: { userId?: string; tableNumber?: string }) => {
   const path = 'orders';
-  let q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  let q = query(collection(db, 'orders'));
   
   if (filters?.userId) {
     q = query(q, where('userId', '==', filters.userId));
   } else if (filters?.tableNumber) {
     q = query(q, where('tableNumber', '==', filters.tableNumber));
+  } else {
+    // Only use server-side ordering if no filters are present to avoid composite index requirements
+    // Composite indexes are required for where() + orderBy() on different fields
+    q = query(q, orderBy('createdAt', 'desc'));
   }
 
   return onSnapshot(q, (snapshot) => {

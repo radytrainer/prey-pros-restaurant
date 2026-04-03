@@ -12,7 +12,14 @@ import {
   X,
   Loader2,
   Database,
-  Download
+  Download,
+  MoreVertical,
+  Filter,
+  Sunrise,
+  Sun,
+  Sunset,
+  Moon,
+  AlertCircle
 } from 'lucide-react';
 import { getMenuItems, getTables, createMenuItem, updateMenuItem, deleteMenuItem, createTable, updateTable, deleteTable } from '../services/firebaseService';
 import { generateMenuItemImage } from '../services/gemini';
@@ -55,6 +62,28 @@ export const Admin: React.FC = () => {
     status: 'available',
     capacity: 2
   });
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const categories = ['All', 'Main Course', 'Appetizers', 'Desserts', 'Beverages'];
+
+  const filteredMenuItems = menuItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const getTimeIcon = (time: string) => {
+    switch (time) {
+      case 'Morning': return <Sunrise className="w-3.5 h-3.5" />;
+      case 'Afternoon': return <Sun className="w-3.5 h-3.5" />;
+      case 'Evening': return <Sunset className="w-3.5 h-3.5" />;
+      case 'Night': return <Moon className="w-3.5 h-3.5" />;
+      default: return <Sun className="w-3.5 h-3.5" />;
+    }
+  };
 
   useEffect(() => {
     getMenuItems().then(setMenuItems);
@@ -111,6 +140,17 @@ export const Admin: React.FC = () => {
 
   const handleSaveItem = async () => {
     if (!newItem.name || !newItem.price) return;
+
+    // Check for duplicate title
+    const isDuplicate = menuItems.some(item => 
+      item.name.trim().toLowerCase() === newItem.name?.trim().toLowerCase() && 
+      item.id !== editingMenuItemId
+    );
+
+    if (isDuplicate) {
+      alert('This food title already exists! / ឈ្មោះម្ហូបនេះមានរួចហើយ!');
+      return;
+    }
     try {
       if (editingMenuItemId) {
         await updateMenuItem(editingMenuItemId, newItem);
@@ -238,9 +278,27 @@ export const Admin: React.FC = () => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5 group-focus-within:text-amber-600 transition-colors" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search menu items... / ស្វែងរកមុខម្ហូប..."
                 className="w-full pl-12 pr-4 py-3 bg-white border border-stone-100 rounded-2xl focus:ring-2 focus:ring-amber-500/20 transition-all outline-none text-sm shadow-sm"
               />
+            </div>
+            
+            <div className="flex bg-white p-1 rounded-2xl border border-stone-100 shadow-sm overflow-x-auto no-scrollbar gap-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    selectedCategory === cat 
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-100' 
+                      : 'text-stone-500 hover:bg-stone-50'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <button 
@@ -275,94 +333,218 @@ export const Admin: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menuItems.map((item) => {
-              const nameParts = item.name.split('/');
-              const englishName = getEnglishName(item.name);
-              const isKhmerFirst = /[\u1780-\u17FF]/.test(nameParts[0]);
-              const khmerPart = isKhmerFirst ? nameParts[0].trim() : (nameParts[1]?.trim() || '');
-              
-              const displayTitle = khmerPart && englishName && khmerPart !== englishName 
-                ? `${khmerPart} / ${englishName}` 
-                : item.name;
+            <AnimatePresence mode="popLayout">
+              {filteredMenuItems.map((item) => {
+                const nameParts = item.name.split('/');
+                const englishName = getEnglishName(item.name);
+                const isKhmerFirst = /[\u1780-\u17FF]/.test(nameParts[0]);
+                const khmerPart = isKhmerFirst ? nameParts[0].trim() : (nameParts[1]?.trim() || '');
+                
+                const displayTitle = khmerPart && englishName && khmerPart !== englishName 
+                  ? `${khmerPart} / ${englishName}` 
+                  : item.name;
 
-              const rawImg = item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : '');
-              const finalImage = rawImg && !rawImg.includes('unsplash.com') 
-                ? rawImg 
-                : `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`;
+                const rawImg = item.imageUrl || ((item as any).image?.startsWith('http') ? (item as any).image : '');
+                const finalImage = rawImg && !rawImg.includes('unsplash.com') 
+                  ? rawImg 
+                  : `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`;
 
-              return (
-              <div key={item.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex gap-4 group">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 relative bg-stone-50">
-                  <img 
-                    src={finalImage} 
-                    alt={displayTitle} 
-                    className="w-full h-full object-cover" 
-                    referrerPolicy="no-referrer" 
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`;
-                    }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-gray-900 truncate group-hover:text-amber-600 transition-colors" title={displayTitle}>{displayTitle}</h3>
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => handleEditItem(item)}
-                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteMenuItem(item.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                const isDuplicate = menuItems.filter(i => i.name.toLowerCase() === item.name.toLowerCase()).length > 1;
+
+                return (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  key={item.id} 
+                  className="bg-white p-5 rounded-[2rem] border border-stone-100 shadow-sm hover:shadow-xl hover:shadow-stone-100/50 transition-all flex flex-col gap-4 group relative"
+                >
+                  <div className="flex gap-4">
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border border-stone-100 relative bg-stone-50">
+                      <img 
+                        src={finalImage} 
+                        alt={displayTitle} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                        referrerPolicy="no-referrer" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://image.pollinations.ai/prompt/${encodeURIComponent(englishName + ' delicious food cinematic')}?width=200&height=200&nologo=true`;
+                        }}
+                      />
+                      {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px] flex items-center justify-center">
+                          <span className="text-[10px] font-black text-white uppercase tracking-widest rotate-[-15deg] border border-white/40 px-2 py-0.5 rounded">Unavailable</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className={`w-2 h-2 rounded-full ${item.isAvailable ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+                            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">{item.category}</span>
+                          </div>
+                          <h3 
+                            className="font-bold text-stone-900 group-hover:text-amber-600 transition-colors line-clamp-2 leading-tight" 
+                            title={displayTitle}
+                          >
+                            {displayTitle}
+                          </h3>
+                        </div>
+                        <div className="relative">
+                          <button 
+                            onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
+                            className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          
+                          <AnimatePresence>
+                            {activeMenuId === item.id && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-10" 
+                                  onClick={() => setActiveMenuId(null)}
+                                />
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                  className="absolute right-0 mt-2 w-40 bg-white rounded-2xl shadow-2xl border border-stone-100 z-20 overflow-hidden"
+                                >
+                                  <button 
+                                    onClick={() => {
+                                      handleEditItem(item);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-stone-600 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                    Edit Item
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      handleDeleteMenuItem(item.id);
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors border-t border-stone-50"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete Item
+                                  </button>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">${item.price}</span>
+                        {item.timeCategory && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-stone-500 bg-stone-50 px-2 py-0.5 rounded-lg border border-stone-100">
+                            {getTimeIcon(item.timeCategory)}
+                            {item.timeCategory}
+                          </span>
+                        )}
+                        {isDuplicate && (
+                          <div className="group/tip relative">
+                            <AlertCircle className="w-4 h-4 text-red-400 animate-pulse" />
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-stone-900 text-white text-[10px] rounded shadow-xl opacity-0 group-hover/tip:opacity-100 transition-opacity whitespace-nowrap z-30">
+                              Duplicate Name Detected!
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-xs text-amber-600 font-bold mt-1">${item.price}</p>
-                  <p className="text-xs text-gray-400 mt-2 line-clamp-2">{item.description}</p>
+
+                  {item.description && (
+                    <p className="text-[11px] text-stone-500 leading-relaxed line-clamp-2 bg-stone-50/50 p-2 rounded-xl border border-stone-50">
+                      {item.description}
+                    </p>
+                  )}
+
                   {item.ingredients && item.ingredients.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1">
                       {item.ingredients.slice(0, 3).map((ing, idx) => (
-                        <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-stone-50 text-stone-500 rounded border border-stone-100">
+                        <span key={idx} className="text-[9px] px-2 py-0.5 bg-white text-stone-500 rounded-full border border-stone-100 shadow-sm font-medium">
                           {ing.name}
                         </span>
                       ))}
                       {item.ingredients.length > 3 && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-stone-50 text-stone-400 rounded border border-stone-100">
-                          +{item.ingredients.length - 3} more
+                        <span className="text-[9px] px-2 py-0.5 bg-stone-100 text-stone-400 rounded-full font-bold">
+                          +{item.ingredients.length - 3}
                         </span>
                       )}
                     </div>
                   )}
+                </motion.div>
+              )})}
+            </AnimatePresence>
+            {filteredMenuItems.length === 0 && (
+              <div className="col-span-full py-20 text-center">
+                <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-stone-100">
+                  <Search className="w-8 h-8 text-stone-300" />
                 </div>
+                <h3 className="text-lg font-bold text-stone-900">No dishes found / រកមិនឃើញមុខម្ហូប</h3>
+                <p className="text-stone-500 text-sm mt-1">Try adjusting your search or category filter.</p>
               </div>
-            )})}
+            )}
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {tables.map((table) => (
             <div key={table.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-center group hover:border-amber-200 transition-all relative">
-              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => {
-                    setEditingTableId(table.id);
-                    setNewTable(table);
-                    setIsTableModalOpen(true);
-                  }}
-                  className="p-1.5 bg-stone-50 text-stone-400 hover:text-amber-600 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button 
-                  onClick={() => handleDeleteTable(table.id)}
-                  className="p-1.5 bg-stone-50 text-stone-400 hover:text-red-500 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+              <div className="absolute top-3 right-3">
+                <div className="relative">
+                  <button 
+                    onClick={() => setActiveMenuId(activeMenuId === table.id ? null : table.id)}
+                    className="p-1.5 bg-white/80 backdrop-blur-sm text-stone-400 hover:text-amber-600 rounded-lg transition-all border border-stone-100 shadow-sm opacity-0 group-hover:opacity-100"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {activeMenuId === table.id && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setActiveMenuId(null)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 z-20 overflow-hidden"
+                        >
+                          <button 
+                            onClick={() => {
+                              setEditingTableId(table.id);
+                              setNewTable(table);
+                              setIsTableModalOpen(true);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-gray-600 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Edit Table
+                          </button>
+                          <button 
+                            onClick={() => {
+                              handleDeleteTable(table.id);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete Table
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
               <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                 <QrCode className="w-8 h-8" />

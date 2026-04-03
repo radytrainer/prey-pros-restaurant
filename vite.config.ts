@@ -18,6 +18,9 @@ export default defineConfig(({mode}) => {
           short_name: 'Prey Pros',
           description: 'Premium Modern Khmer Dining Experience',
           theme_color: '#d97706',
+          background_color: '#000000',
+          display: 'standalone',
+          start_url: '/',
           icons: [
             {
               src: 'pwa-192.png',
@@ -34,6 +37,32 @@ export default defineConfig(({mode}) => {
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
+            }
+          ]
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module'
+        },
+        workbox: {
+          globPatterns: [], // Disable glob patterns in dev to avoid warnings
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/images\.unsplash\.com\/.*/,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'unsplash-images',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 Days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             }
           ]
         }

@@ -638,35 +638,19 @@ export const CustomerMenu: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="relative p-6 bg-white border-4 border-amber-600 rounded-[40px] shadow-2xl shadow-amber-100/50">
-                          <div className="w-56 h-56 bg-stone-50 rounded-[32px] flex flex-col items-center justify-center border border-stone-100 overflow-hidden relative group">
-                            {/* Placeholder for real KHQR image */}
-                            <div className="flex flex-col items-center gap-3">
-                              <div className="relative">
-                                <QrCode className="w-28 h-28 text-stone-900" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="w-8 h-8 bg-white rounded-lg border-2 border-stone-900 flex items-center justify-center">
-                                    <div className="w-4 h-4 bg-red-600 rounded-sm" />
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em]">KHQR</p>
-                                <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest mt-1">Scan with any bank app</p>
-                              </div>
+                          <div className="relative p-6 bg-white border-4 border-amber-600 rounded-[40px] shadow-2xl shadow-amber-100/50 transition-all hover:scale-[1.02]">
+                            <div className="w-56 h-56 bg-stone-50 rounded-[32px] flex flex-col items-center justify-center border border-stone-100 overflow-hidden relative group">
+                              <img 
+                                src="/khqr.png" 
+                                alt="Official KHQR" 
+                                className="w-full h-full object-cover p-2"
+                              />
                             </div>
                             
-                            {/* Decorative corners */}
-                            <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-stone-200 rounded-tl-lg" />
-                            <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-stone-200 rounded-tr-lg" />
-                            <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-stone-200 rounded-bl-lg" />
-                            <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-stone-200 rounded-br-lg" />
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg">
+                              Official KHQR
+                            </div>
                           </div>
-                          
-                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg">
-                            Official KHQR
-                          </div>
-                        </div>
 
                         <div className="w-full space-y-4">
                           <div className="bg-emerald-50 p-5 rounded-3xl border border-emerald-100 flex items-start gap-3">

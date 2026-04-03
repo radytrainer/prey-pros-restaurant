@@ -9,11 +9,12 @@ import {
   Users,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  MoreVertical
 } from 'lucide-react';
 import { getTables, createTable, deleteTable, subscribeToTables, subscribeToOrders } from '../services/firebaseService';
 import type { Table, Order } from '../types';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const Tables: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
@@ -21,6 +22,7 @@ export const Tables: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubTables = subscribeToTables(setTables);
@@ -180,11 +182,41 @@ export const Tables: React.FC = () => {
             >
               <div className="absolute top-4 right-4">
                 <button 
-                  onClick={() => handleDeleteTable(table.id)}
-                  className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                  onClick={() => setActiveMenuId(activeMenuId === table.id ? null : table.id)}
+                  className={`p-2 rounded-xl transition-all ${
+                    activeMenuId === table.id ? 'bg-stone-900 text-white shadow-lg' : 'text-stone-400 hover:text-stone-900 hover:bg-stone-100'
+                  }`}
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <MoreVertical className="w-5 h-5" />
                 </button>
+                
+                <AnimatePresence>
+                  {activeMenuId === table.id && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setActiveMenuId(null)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-stone-100 z-20 overflow-hidden"
+                      >
+                        <button 
+                          onClick={() => {
+                            handleDeleteTable(table.id);
+                            setActiveMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Table / លុបតុ
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
               
               <div className="w-24 h-24 bg-stone-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-stone-100 group-hover:border-amber-200 transition-colors">

@@ -47,6 +47,7 @@ export interface Order {
   status: OrderStatus;
   tableNumber: string;
   paymentMethod?: PaymentMethod;
+  paymentStatus: 'pending' | 'paid';
   createdAt: string;
 }
 

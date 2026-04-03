@@ -63,7 +63,8 @@ export const Dashboard: React.FC = () => {
         tableNumber,
         items: selectedItems.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity, price: i.price, name: i.name })),
         totalPrice,
-        status: 'pending',
+        status: 'pending' as const,
+        paymentStatus: 'paid' as const,
         createdAt: new Date().toISOString(),
         userId: 'staff-1' // Mock staff ID
       });

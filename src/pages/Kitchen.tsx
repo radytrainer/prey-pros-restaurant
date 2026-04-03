@@ -8,9 +8,10 @@ import {
   MoreVertical,
   ChevronRight,
   Utensils,
-  Loader2
+  Loader2,
+  DollarSign
 } from 'lucide-react';
-import { subscribeToOrders, updateOrderStatus } from '../services/firebaseService';
+import { subscribeToOrders, updateOrderStatus, updateOrderPaymentStatus } from '../services/firebaseService';
 import type { Order, OrderStatus } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -82,6 +83,16 @@ export const Kitchen: React.FC = () => {
     }
   };
 
+  const handleConfirmPayment = async (orderId: string) => {
+    try {
+      await updateOrderPaymentStatus(orderId, 'paid');
+      toast.success('Payment confirmed! / បានបញ្ជាក់ការបង់ប្រាក់!');
+    } catch (error) {
+      console.error('Failed to confirm payment:', error);
+      toast.error('Failed to confirm payment.');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -147,6 +158,22 @@ export const Kitchen: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {order.paymentStatus === 'pending' && (
+                <div className="px-6 py-4 bg-red-50 border-y border-red-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Payment Required</p>
+                    <p className="text-sm font-bold text-red-900">${order.totalPrice.toFixed(2)} - {order.paymentMethod}</p>
+                  </div>
+                  <button
+                    onClick={() => handleConfirmPayment(order.id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100"
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    Confirm
+                  </button>
+                </div>
+              )}
 
               <div className="p-6 bg-gray-50/50 border-t border-gray-50 mt-auto">
                 <div className="flex items-center justify-between mb-6 text-xs text-gray-400 font-medium">

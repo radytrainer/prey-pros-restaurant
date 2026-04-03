@@ -17,7 +17,9 @@ import {
   ChevronRight,
   Utensils,
   QrCode,
-  History
+  History,
+  Download,
+  Copy
 } from 'lucide-react';
 import { getMenuItems, createOrder, subscribeToOrders } from '../services/firebaseService';
 import { useAuth } from '../components/AuthContext';
@@ -167,6 +169,7 @@ export const CustomerMenu: React.FC = () => {
       status: 'pending' as const,
       tableNumber: tableId || '1',
       paymentMethod,
+      paymentStatus: 'pending' as const,
       createdAt: new Date().toISOString()
     };
 
@@ -541,9 +544,21 @@ export const CustomerMenu: React.FC = () => {
                       ))}
                     </div>
 
-                    <div className="pt-4 border-t border-stone-50 flex items-center justify-between">
-                      <span className="text-stone-400 text-xs font-bold uppercase tracking-widest">Total</span>
-                      <span className="text-lg font-bold text-stone-900">${order.totalPrice.toFixed(2)}</span>
+                    <div className="pt-4 border-t border-stone-50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-stone-400 text-xs font-bold uppercase tracking-widest">Payment Status</span>
+                        <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest ${
+                          order.paymentStatus === 'paid' 
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                            : 'bg-red-50 text-red-600 border border-red-100'
+                        }`}>
+                          {order.paymentStatus === 'paid' ? 'Paid / បានបង់ប្រាក់' : 'Pending Verification / រង់ចាំការផ្ទៀងផ្ទាត់'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-stone-400 text-xs font-bold uppercase tracking-widest">Total</span>
+                        <span className="text-lg font-bold text-stone-900">${order.totalPrice.toFixed(2)}</span>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -652,26 +667,52 @@ export const CustomerMenu: React.FC = () => {
                             </div>
                           </div>
 
-                        <div className="w-full space-y-4">
-                          <div className="bg-emerald-50 p-5 rounded-3xl border border-emerald-100 flex items-start gap-3">
-                            <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm flex-shrink-0">
-                              <CheckCircle2 className="w-5 h-5" />
+                          <div className="w-full space-y-4">
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = '/khqr.png';
+                                  link.download = 'PreyPros-KHQR.png';
+                                  link.click();
+                                  toast.success('QR Image saved to photos! / បានរក្សាទុករូបភាព QR!');
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-stone-100 text-stone-600 rounded-2xl text-xs font-bold hover:bg-stone-200 transition-all border border-stone-200"
+                              >
+                                <Download className="w-4 h-4" />
+                                Save QR Image
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(total.toFixed(2));
+                                  toast.success('Amount copied to clipboard! / បានចម្លងចំនួនទឹកប្រាក់!');
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-stone-100 text-stone-600 rounded-2xl text-xs font-bold hover:bg-stone-200 transition-all border border-stone-200"
+                              >
+                                <Copy className="w-4 h-4" />
+                                Copy Amount
+                              </button>
                             </div>
-                            <div className="space-y-1">
-                              <p className="text-xs font-bold text-emerald-900">Payment Confirmation / ការបញ្ជាក់ការបង់ប្រាក់</p>
-                              <p className="text-[10px] text-emerald-700 leading-relaxed">
-                                Once you've completed the transfer, please click the "Complete Order" button below. Our staff will verify the transaction.
-                                <br />
-                                នៅពេលអ្នកបានបញ្ចប់ការផ្ទេរប្រាក់ សូមចុចប៊ូតុង "បញ្ចប់ការបញ្ជាទិញ" ខាងក្រោម។ បុគ្គលិករបស់យើងនឹងផ្ទៀងផ្ទាត់ប្រតិបត្តិការ។
-                              </p>
+
+                            <div className="bg-emerald-50 p-5 rounded-3xl border border-emerald-100 flex items-start gap-3">
+                              <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm flex-shrink-0">
+                                <CheckCircle2 className="w-5 h-5" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs font-bold text-emerald-900">Payment Pending Verification / កំពុងរង់ចាំការផ្ទៀងផ្ទាត់</p>
+                                <p className="text-[10px] text-emerald-700 leading-relaxed">
+                                  Our staff will verify your payment at the counter or your table. Thank you for your patience!
+                                  <br />
+                                  បុគ្គលិករបស់យើងនឹងផ្ទៀងផ្ទាត់ការបង់ប្រាក់របស់អ្នកនៅបញ្ជរ ឬនៅតុរបស់អ្នក។ សូមអរគុណចំពោះការយោគយល់!
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 text-center">
+                              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Prey Pros Restaurant</p>
+                              <p className="text-sm font-bold text-stone-900 mt-1">Total: ${total.toFixed(2)}</p>
                             </div>
                           </div>
-                          
-                          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 text-center">
-                            <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Prey Pros Restaurant</p>
-                            <p className="text-sm font-bold text-stone-900 mt-1">Total: ${total.toFixed(2)}</p>
-                          </div>
-                        </div>
                       </motion.div>
                     )}
                   </div>

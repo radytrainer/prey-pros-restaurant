@@ -201,6 +201,16 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
   }
 };
 
+export const updateOrderPaymentStatus = async (orderId: string, paymentStatus: 'pending' | 'paid'): Promise<void> => {
+  const path = `orders/${orderId}`;
+  try {
+    const docRef = doc(db, 'orders', orderId);
+    await updateDoc(docRef, { paymentStatus });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+};
+
 // Sales
 export const getSales = async (): Promise<Sale[]> => {
   const path = 'sales';

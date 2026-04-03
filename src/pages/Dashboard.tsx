@@ -24,7 +24,6 @@ import {
   Area
 } from 'recharts';
 import { getSales, subscribeToOrders, createOrder, getMenuItems } from '../services/firebaseService';
-import { seedAdminData } from '../services/seedAdminData';
 import type { Order, Sale, MenuItem } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -106,20 +105,11 @@ export const Dashboard: React.FC = () => {
           <p className="text-sm sm:text-base text-stone-500 mt-1">Welcome back! Here's what's happening today.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm font-semibold text-stone-700 hover:bg-stone-50 transition-colors shadow-sm">
-            Download Report / ទាញយករបាយការណ៍
-          </button>
           <button 
             onClick={() => setIsOrderModalOpen(true)}
             className="flex-1 sm:flex-none px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition-colors shadow-md shadow-amber-200"
           >
             Add New Order / បន្ថែមការកម្ម៉ង់
-          </button>
-          <button 
-            onClick={seedAdminData}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors shadow-md shadow-red-200"
-          >
-            Seed Admin Data (Testing)
           </button>
         </div>
       </div>

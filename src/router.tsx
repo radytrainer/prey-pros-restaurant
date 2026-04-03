@@ -4,8 +4,6 @@ import { Layout } from './components/Layout';
 import { AuthGuard } from './components/AuthGuard';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
-import { Menu } from './pages/Menu';
-import { Inventory } from './pages/Inventory';
 import { Kitchen } from './pages/Kitchen';
 import { Admin } from './pages/Admin';
 import { Tables } from './pages/Tables';
@@ -26,8 +24,6 @@ const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { index: true, element: <Dashboard /> },
-          { path: 'menu', element: <Menu /> },
-          { path: 'inventory', element: <Inventory /> },
           { path: 'kitchen', element: <Kitchen /> },
           { path: 'admin', element: <Admin /> },
           { path: 'tables', element: <Tables /> },

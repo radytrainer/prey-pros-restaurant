@@ -29,15 +29,6 @@ export interface MenuItem {
   isAvailable: boolean;
 }
 
-export interface Ingredient {
-  id: string;
-  name: string;
-  stockLevel: number;
-  unit: string;
-  minStockLevel: number;
-  supplier: string;
-}
-
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 
 export interface OrderItem {

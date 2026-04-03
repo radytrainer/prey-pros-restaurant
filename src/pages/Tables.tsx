@@ -11,18 +11,29 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { getTables, createTable, deleteTable } from '../services/firebaseService';
-import type { Table } from '../types';
+import { getTables, createTable, deleteTable, subscribeToTables, subscribeToOrders } from '../services/firebaseService';
+import type { Table, Order } from '../types';
 import { motion } from 'motion/react';
 
 export const Tables: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState('');
 
   useEffect(() => {
-    getTables().then(setTables);
+    const unsubTables = subscribeToTables(setTables);
+    const unsubOrders = subscribeToOrders((orders) => {
+      // Only keep orders that are not completed or cancelled
+      const busy = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
+      setActiveOrders(busy);
+    });
+
+    return () => {
+      unsubTables();
+      unsubOrders();
+    };
   }, []);
 
   const handleAddTable = async () => {
@@ -42,7 +53,6 @@ export const Tables: React.FC = () => {
       });
       setNewTableNumber('');
       setIsAdding(false);
-      getTables().then(setTables);
     } catch (error) {
       console.error('Error adding table:', error);
     }
@@ -52,18 +62,22 @@ export const Tables: React.FC = () => {
     if (!confirm('Are you sure you want to delete this table?')) return;
     try {
       await deleteTable(id);
-      getTables().then(setTables);
     } catch (error) {
       console.error('Error deleting table:', error);
     }
+  };
+
+  const getTableStatus = (tableNumber: string): 'available' | 'occupied' => {
+    const isBusy = activeOrders.some(order => order.tableNumber === tableNumber);
+    return isBusy ? 'occupied' : 'available';
   };
 
   const filteredTables = tables.filter(t => t.number.includes(search));
 
   const stats = [
     { label: 'Total Tables / តុសរុប', value: tables.length, icon: QrCode, color: 'bg-stone-50 text-stone-600' },
-    { label: 'Occupied / មានភ្ញៀវ', value: tables.filter(t => t.status === 'occupied').length, icon: Users, color: 'bg-amber-50 text-amber-600' },
-    { label: 'Available / ទំនេរ', value: tables.filter(t => t.status === 'available').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600' },
+    { label: 'Occupied / មានភ្ញៀវ', value: tables.filter(t => getTableStatus(t.number) === 'occupied').length, icon: Users, color: 'bg-amber-50 text-amber-600' },
+    { label: 'Available / ទំនេរ', value: tables.filter(t => getTableStatus(t.number) === 'available').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600' },
   ];
 
   return (
@@ -125,7 +139,7 @@ export const Tables: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"
+            className="bg-white p-stat[0] rounded-3xl border border-gray-100 shadow-sm p-6"
           >
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-2xl ${stat.color}`}>
@@ -155,7 +169,9 @@ export const Tables: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-8">
-          {filteredTables.map((table) => (
+          {filteredTables.map((table) => {
+            const currentStatus = getTableStatus(table.number);
+            return (
             <motion.div
               key={table.id}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -178,12 +194,12 @@ export const Tables: React.FC = () => {
               <h3 className="text-xl font-bold text-stone-900 text-center">Table {table.number}</h3>
               <div className="flex items-center justify-center gap-2 mt-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  table.status === 'available' ? 'bg-emerald-500' : 'bg-amber-500'
+                  currentStatus === 'available' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
                 }`}></div>
                 <span className={`text-xs font-bold uppercase tracking-wider ${
-                  table.status === 'available' ? 'text-emerald-600' : 'text-amber-600'
+                  currentStatus === 'available' ? 'text-emerald-600' : 'text-red-600'
                 }`}>
-                  {table.status}
+                  {currentStatus === 'available' ? 'Available / ទំនេរ' : 'Occupied / មានភ្ញៀវ'}
                 </span>
               </div>
 
@@ -210,7 +226,7 @@ export const Tables: React.FC = () => {
                 </a>
               </div>
             </motion.div>
-          ))}
+          )})}
           {filteredTables.length === 0 && (
             <div className="col-span-full py-20 text-center">
               <AlertCircle className="w-16 h-16 text-gray-100 mx-auto mb-4" />

@@ -21,10 +21,10 @@ import {
   Moon,
   AlertCircle
 } from 'lucide-react';
-import { getMenuItems, getTables, createMenuItem, updateMenuItem, deleteMenuItem, createTable, updateTable, deleteTable } from '../services/firebaseService';
+import { getMenuItems, getTables, createMenuItem, updateMenuItem, deleteMenuItem, createTable, updateTable, deleteTable, subscribeToTables, subscribeToOrders } from '../services/firebaseService';
 import { generateMenuItemImage } from '../services/gemini';
 import { SAMPLE_MENU_ITEMS } from '../constants';
-import { MenuItem, Table, MenuItemIngredient } from '../types';
+import { MenuItem, Table, MenuItemIngredient, Order } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -36,6 +36,7 @@ const getEnglishName = (name: string) => {
 export const Admin: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'menu' | 'tables'>('menu');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
@@ -87,8 +88,23 @@ export const Admin: React.FC = () => {
 
   useEffect(() => {
     getMenuItems().then(setMenuItems);
-    getTables().then(setTables);
+    const unsubTables = subscribeToTables(setTables);
+    const unsubOrders = subscribeToOrders((orders) => {
+      // Only keep orders that are not completed or cancelled
+      const busy = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
+      setActiveOrders(busy);
+    });
+
+    return () => {
+      unsubTables();
+      unsubOrders();
+    };
   }, []);
+
+  const getTableStatus = (tableNumber: string): 'available' | 'occupied' => {
+    const isBusy = activeOrders.some(order => order.tableNumber === tableNumber);
+    return isBusy ? 'occupied' : 'available';
+  };
 
   const handleAddIngredient = () => {
     if (!currentIngredient.name || currentIngredient.quantity <= 0) return;
@@ -246,8 +262,8 @@ export const Admin: React.FC = () => {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Admin Management</h1>
-          <p className="text-sm sm:text-base text-gray-500 mt-1">Configure your restaurant settings and menu.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Admin Management / ការគ្រប់គ្រង</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">Configure your restaurant settings and menu. / កំណត់រចនាសម្ព័ន្ធភោជនីយដ្ឋាន និងបញ្ជីមុខម្ហូបរបស់អ្នក។</p>
         </div>
         <div className="flex bg-white p-1 rounded-2xl border border-stone-100 shadow-sm overflow-x-auto no-scrollbar">
           <button
@@ -494,7 +510,9 @@ export const Admin: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {tables.map((table) => (
+          {tables.map((table) => {
+            const currentStatus = getTableStatus(table.number);
+            return (
             <div key={table.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-center group hover:border-amber-200 transition-all relative">
               <div className="absolute top-3 right-3">
                 <div className="relative">
@@ -551,9 +569,9 @@ export const Admin: React.FC = () => {
               </div>
               <h3 className="font-bold text-gray-900">Table {table.number}</h3>
               <p className={`text-xs font-bold mt-2 uppercase tracking-wider ${
-                table.status === 'available' ? 'text-emerald-500' : 'text-amber-500'
+                currentStatus === 'available' ? 'text-emerald-500' : 'text-red-500'
               }`}>
-                {table.status}
+                {currentStatus === 'available' ? 'Available / ទំនេរ' : 'Occupied / មានភ្ញៀវ'}
               </p>
               <button 
                 onClick={() => {
@@ -566,7 +584,7 @@ export const Admin: React.FC = () => {
                 View QR Code
               </button>
             </div>
-          ))}
+          )})}
           <button 
             onClick={() => {
               setEditingTableId(null);
@@ -607,7 +625,7 @@ export const Admin: React.FC = () => {
               <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Item Name</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Item Name / ឈ្មោះមុខម្ហូប</label>
                     <input
                       type="text"
                       value={newItem.name}
@@ -644,7 +662,7 @@ export const Admin: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Price ($)</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Price ($) / តម្លៃ ($)</label>
                       <input
                         type="number"
                         value={newItem.price}
@@ -660,7 +678,7 @@ export const Admin: React.FC = () => {
                           onChange={(e) => setNewItem(prev => ({ ...prev, isAvailable: e.target.checked }))}
                           className="w-5 h-5 rounded-lg border-gray-300 text-amber-600 focus:ring-amber-500"
                         />
-                        <span className="text-sm font-bold text-gray-700">Available</span>
+                        <span className="text-sm font-bold text-gray-700">Available / មានក្នុងស្តុក</span>
                       </label>
                     </div>
                   </div>
@@ -668,7 +686,7 @@ export const Admin: React.FC = () => {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Description / ការពិពណ៌នា</label>
                     <textarea
                       value={newItem.description}
                       onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
@@ -677,7 +695,7 @@ export const Admin: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Item Image</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Item Image / រូបភាព</label>
                     <div className="relative group aspect-video bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
                       {newItem.imageUrl ? (
                         <img src={newItem.imageUrl} alt="Preview" className="w-full h-full object-cover" />

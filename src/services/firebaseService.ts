@@ -16,7 +16,7 @@ import {
   type QuerySnapshot,
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import type { UserProfile, MenuItem, Ingredient, Order, Table, Sale, OrderStatus } from '../types';
+import type { UserProfile, MenuItem, Order, Table, Sale, OrderStatus } from '../types';
 
 enum OperationType {
   CREATE = 'create',
@@ -147,39 +147,6 @@ export const deleteMenuItem = async (id: string): Promise<void> => {
   }
 };
 
-// Inventory
-export const getIngredients = async (): Promise<Ingredient[]> => {
-  const path = 'inventory';
-  try {
-    const querySnapshot = await getDocs(collection(db, 'inventory'));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
-    return [];
-  }
-};
-
-export const subscribeToIngredients = (callback: (items: Ingredient[]) => void) => {
-  const path = 'inventory';
-  return onSnapshot(collection(db, 'inventory'), (snapshot) => {
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
-    callback(items);
-  }, (error) => {
-    handleFirestoreError(error, OperationType.LIST, path);
-  });
-};
-
-export const createIngredient = async (ingredient: Omit<Ingredient, 'id'>): Promise<string> => {
-  const path = 'inventory';
-  try {
-    const docRef = await addDoc(collection(db, 'inventory'), ingredient);
-    return docRef.id;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
-    return '';
-  }
-};
-
 // Orders
 export const createOrder = async (order: Omit<Order, 'id'>): Promise<string> => {
   const path = 'orders';
@@ -255,6 +222,16 @@ export const getTables = async (): Promise<Table[]> => {
     handleFirestoreError(error, OperationType.LIST, path);
     return [];
   }
+};
+
+export const subscribeToTables = (callback: (tables: Table[]) => void) => {
+  const path = 'tables';
+  return onSnapshot(collection(db, 'tables'), (snapshot) => {
+    const tables = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Table));
+    callback(tables);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, path);
+  });
 };
 
 export const createTable = async (table: Omit<Table, 'id'>): Promise<string> => {

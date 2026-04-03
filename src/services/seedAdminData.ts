@@ -1,4 +1,4 @@
-import { createMenuItem, createIngredient, createOrder, createTable } from './firebaseService';
+import { createMenuItem, createOrder, createTable } from './firebaseService';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -8,11 +8,11 @@ export const seedAdminData = async () => {
 
     // 1. Seed Menu Items
     const menuItems = [
-      { name: 'Noodle Soup', description: 'Delicious noodle soup', price: 3.50, category: 'Main', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=600&q=80' },
-      { name: 'Porridge', description: 'Warm rice porridge', price: 2.50, category: 'Main', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&q=80' },
-      { name: 'Egg Sandwich', description: 'Egg sandwich with herbs', price: 2.00, category: 'Breakfast', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80' },
-      { name: 'Fried Rice', description: 'Morning fried rice', price: 3.00, category: 'Main', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&q=80' },
-      { name: 'Steamed Bun', description: 'Soft steamed bun', price: 1.50, category: 'Snack', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1560159902-17855b410c57?w=600&q=80' },
+      { name: 'មីស៊ុប', description: 'មីស៊ុបដ៏ឈ្ងុយឆ្ងាញ់', price: 3.50, category: 'Main', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=600&q=80' },
+      { name: 'បបរ', description: 'បបរក្តៅៗ', price: 2.50, category: 'Main', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&q=80' },
+      { name: 'នំបុ័ងស៊ុត', description: 'នំបុ័ងស៊ុតជាមួយជី', price: 2.00, category: 'Breakfast', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80' },
+      { name: 'បាយឆា', description: 'បាយឆាពេលព្រឹក', price: 3.00, category: 'Main', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&q=80' },
+      { name: 'នំប៉ាវ', description: 'នំប៉ាវទន់ៗ', price: 1.50, category: 'Snack', ingredients: [], isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1560159902-17855b410c57?w=600&q=80' },
     ];
 
     const menuIds: string[] = [];
@@ -22,21 +22,7 @@ export const seedAdminData = async () => {
     }
     console.log('Menu seeded.');
 
-    // 2. Seed Inventory
-    const ingredients = [
-      { name: 'Rice', stockLevel: 50, unit: 'kg', minStockLevel: 10, supplier: 'Local Market' },
-      { name: 'Noodles', stockLevel: 20, unit: 'kg', minStockLevel: 5, supplier: 'Local Market' },
-      { name: 'Eggs', stockLevel: 100, unit: 'pcs', minStockLevel: 20, supplier: 'Farm Fresh' },
-      { name: 'Chicken', stockLevel: 8, unit: 'kg', minStockLevel: 10, supplier: 'Meat Co.' }, // low stock
-      { name: 'Spring Onions', stockLevel: 2, unit: 'kg', minStockLevel: 1, supplier: 'Local Market' },
-    ];
-
-    for (const ing of ingredients) {
-      await createIngredient(ing);
-    }
-    console.log('Inventory seeded.');
-
-    // 3. Seed Tables
+    // 2. Seed Tables
     const tables = [
       { number: '1', status: 'occupied', capacity: 4 },
       { number: '2', status: 'available', capacity: 2 },

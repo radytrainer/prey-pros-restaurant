@@ -40,8 +40,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard', show: true },
-    { to: '/menu', icon: Utensils, label: 'Menu', show: true },
-    { to: '/inventory', icon: Package, label: 'Inventory', show: isStaff },
     { to: '/kitchen', icon: ChefHat, label: 'Kitchen', show: isStaff, badge: pendingOrdersCount },
     { to: '/tables', icon: QrCode, label: 'Tables', show: isAdmin },
     { to: '/admin', icon: Settings, label: 'Admin', show: isAdmin },

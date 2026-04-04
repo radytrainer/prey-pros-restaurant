@@ -63,7 +63,7 @@ export const CustomerMenu: React.FC = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isVerifyingLocation, setIsVerifyingLocation] = useState(true);
   
-  const ALLOWED_DISTANCE = 5; // meters
+  const ALLOWED_DISTANCE = 10; // meters
 
   
   const isInitialLoad = React.useRef(true);
@@ -919,9 +919,9 @@ Thank you for choosing Prey Pros!
                       <p className="text-xs font-bold leading-tight decoration-amber-600 underline underline-offset-2 tracking-tight">Outside Restaurant / នៅខាងក្រៅភោជនីយដ្ឋាន</p>
                     </div>
                     <p className="text-[10px] text-amber-600 leading-normal ml-7 font-medium">
-                      You are approx. {Math.round(distance)}m away. Orders are only allowed within 5m. 
+                      You are approx. {Math.round(distance)}m away. Orders are only allowed within 10m. 
                       <br /> 
-                      អ្នកស្ថិតនៅចម្ងាយប្រហែល {Math.round(distance)} ម៉ែត្រ។ ការបញ្ជាទិញអាចធ្វើទៅបានក្នុងរង្វង់ 5 ម៉ែត្រប៉ុណ្ណោះ។
+                      អ្នកស្ថិតនៅចម្ងាយប្រហែល {Math.round(distance)} ម៉ែត្រ។ ការបញ្ជាទិញអាចធ្វើទៅបានក្នុងរង្វង់ 10m ម៉ែត្រប៉ុណ្ណោះ។
                     </p>
                   </div>
                 ) : null}

@@ -281,3 +281,10 @@ export const SAMPLE_MENU_ITEMS: Omit<MenuItem, 'id'>[] = [
     isAvailable: true
   }
 ];
+
+export const RESTAURANT_LOCATION = {
+  lat: 11.5393854,
+  lng: 104.8866719
+};
+
+

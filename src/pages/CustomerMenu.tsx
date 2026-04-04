@@ -19,10 +19,13 @@ import {
   QrCode,
   History,
   Download,
-  Copy
+  Copy,
+  AlertCircle,
+  MapPin
 } from 'lucide-react';
 import { getMenuItems, createOrder, subscribeToOrders } from '../services/firebaseService';
 import { useAuth } from '../components/AuthContext';
+import { RESTAURANT_LOCATION } from '../constants';
 import type { MenuItem, OrderItem, Order, PaymentMethod, TimeCategory } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -50,6 +53,14 @@ export const CustomerMenu: React.FC = () => {
   const [lastOrder, setLastOrder] = useState<{ items: OrderItem[], total: number } | null>(null);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const { profile, user } = useAuth();
+  
+  // Geolocation state
+  const [distance, setDistance] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isVerifyingLocation, setIsVerifyingLocation] = useState(true);
+  
+  const ALLOWED_DISTANCE = 5; // meters
+
   
   const isInitialLoad = React.useRef(true);
   const previousOrders = React.useRef<Map<string, string>>(new Map());
@@ -113,6 +124,57 @@ export const CustomerMenu: React.FC = () => {
     
     return () => unsubscribe();
   }, [tableId, profile?.uid, user?.uid]);
+
+  // Geolocation tracking
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      setIsVerifyingLocation(false);
+      return;
+    }
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371e3; // Earth's radius in meters
+      const φ1 = lat1 * Math.PI/180;
+      const φ2 = lat2 * Math.PI/180;
+      const Δφ = (lat2-lat1) * Math.PI/180;
+      const Δλ = (lon2-lon1) * Math.PI/180;
+
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      return R * c; 
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const d = calculateDistance(
+          latitude, 
+          longitude, 
+          RESTAURANT_LOCATION.lat, 
+          RESTAURANT_LOCATION.lng
+        );
+        setDistance(d);
+        setIsVerifyingLocation(false);
+        setLocationError(null);
+      },
+      (error) => {
+        console.error('Location error:', error);
+        setIsVerifyingLocation(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError('Please enable location access to place an order.');
+        } else {
+          setLocationError('Unable to verify your location. Please try again.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
 
   const categories = ['All', ...new Set(items.map(i => i.category))];
   const timeCategories: (TimeCategory | 'All')[] = ['All', 'Morning', 'Afternoon', 'Evening', 'Night'];
@@ -760,12 +822,6 @@ export const CustomerMenu: React.FC = () => {
                         </button>
                       </div>
                     )})}
-                    {cart.length === 0 && (
-                      <div className="text-center py-12">
-                        <ShoppingCart className="w-12 h-12 text-stone-100 mx-auto mb-4" />
-                        <p className="text-stone-400 text-sm font-medium">Your cart is empty.</p>
-                      </div>
-                    )}
                   </>
                 )}
               </div>
@@ -775,17 +831,46 @@ export const CustomerMenu: React.FC = () => {
                   <span className="text-stone-500 font-bold text-sm">Total / សរុប</span>
                   <span className="text-2xl font-bold text-stone-900">${total.toFixed(2)}</span>
                 </div>
+
+                {isVerifyingLocation ? (
+                  <div className="bg-stone-100 p-4 rounded-xl flex items-center justify-center gap-2 mb-4">
+                    <History className="w-5 h-5 text-stone-400 animate-spin" />
+                    <span className="text-sm font-medium text-stone-500">Verifying location... / កំពុងផ្ទៀងផ្ទាត់ទីតាំង...</span>
+                  </div>
+                ) : locationError ? (
+                  <div className="bg-red-50 p-4 rounded-xl border border-red-100 mb-4">
+                    <div className="flex items-start gap-2 text-red-600 mb-1">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs font-bold leading-tight decoration-red-600 underline underline-offset-2">Location Required / ត្រូវការទីតាំង</p>
+                    </div>
+                    <p className="text-[10px] text-red-500 leading-normal ml-7">{locationError}</p>
+                  </div>
+                ) : distance && distance > ALLOWED_DISTANCE ? (
+                  <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 mb-4">
+                    <div className="flex items-start gap-2 text-amber-600 mb-1">
+                      <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs font-bold leading-tight decoration-amber-600 underline underline-offset-2 tracking-tight">Outside Restaurant / នៅខាងក្រៅភោជនីយដ្ឋាន</p>
+                    </div>
+                    <p className="text-[10px] text-amber-600 leading-normal ml-7 font-medium">
+                      You are approx. {Math.round(distance)}m away. Orders are only allowed within 5m. 
+                      <br /> 
+                      អ្នកស្ថិតនៅចម្ងាយប្រហែល {Math.round(distance)} ម៉ែត្រ។ ការបញ្ជាទិញអាចធ្វើទៅបានក្នុងរង្វង់ 5 ម៉ែត្រប៉ុណ្ណោះ។
+                    </p>
+                  </div>
+                ) : null}
+
                 {showPaymentSelection ? (
                   <button
                     onClick={handleCheckout}
-                    className="w-full bg-amber-600 text-white font-bold py-4 rounded-2xl hover:bg-amber-700 transition-all shadow-xl shadow-amber-100 active:scale-95"
+                    disabled={isVerifyingLocation || !!locationError || (distance !== null && distance > ALLOWED_DISTANCE)}
+                    className="w-full bg-amber-600 text-white font-bold py-4 rounded-2xl hover:bg-amber-700 transition-all shadow-xl shadow-amber-100 active:scale-95 disabled:bg-stone-300 disabled:shadow-none"
                   >
                     Complete Order / បញ្ចប់ការបញ្ជាទិញ
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowPaymentSelection(true)}
-                    disabled={cart.length === 0}
+                    disabled={cart.length === 0 || isVerifyingLocation || !!locationError || (distance !== null && distance > ALLOWED_DISTANCE)}
                     className="w-full bg-stone-900 text-white font-bold py-4 rounded-2xl hover:bg-black transition-all shadow-xl shadow-stone-100 disabled:bg-stone-300 disabled:shadow-none active:scale-95"
                   >
                     Proceed to Payment / បន្តទៅការបង់ប្រាក់

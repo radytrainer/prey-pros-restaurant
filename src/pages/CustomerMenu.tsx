@@ -38,8 +38,8 @@ const getEnglishName = (name: string) => {
 };
 
 export const CustomerMenu: React.FC = () => {
-  const { tableId } = useParams<{ tableId: string }>();
   const navigate = useNavigate();
+
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [search, setSearch] = useState('');
@@ -57,7 +57,11 @@ export const CustomerMenu: React.FC = () => {
   const { profile, user } = useAuth();
   const { tg, onMainButton, offMainButton, showMainButton, hideMainButton, setMainButtonText } = useTelegram();
   
-  // Geolocation state
+  // Resolve tableId from URL or Telegram start_param
+  const routeTableId = useParams<{ tableId: string }>().tableId;
+  const startParam = tg?.initDataUnsafe?.start_param;
+  const tableId = startParam || routeTableId || '1';
+
 
   const [distance, setDistance] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);

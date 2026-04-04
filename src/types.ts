@@ -89,6 +89,7 @@ declare global {
           hideProgress: () => void;
         };
         initDataUnsafe: {
+          start_param?: string;
           user?: {
             id: number;
             first_name: string;
@@ -96,6 +97,7 @@ declare global {
             username?: string;
           };
         };
+
         setHeaderColor: (color: string) => void;
         setBackgroundColor: (color: string) => void;
         enableClosingConfirmation: () => void;

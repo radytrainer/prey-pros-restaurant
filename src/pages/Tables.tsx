@@ -15,6 +15,8 @@ import {
 import { getTables, createTable, deleteTable, subscribeToTables, subscribeToOrders } from '../services/firebaseService';
 import type { Table, Order } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { TELEGRAM_BOT_USERNAME } from '../constants';
+
 
 export const Tables: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
@@ -235,28 +237,42 @@ export const Tables: React.FC = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-8">
+              <div className="grid grid-cols-1 gap-3 mt-8">
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => {
+                      const url = `${window.location.origin}/order/${table.number}`;
+                      navigator.clipboard.writeText(url);
+                      alert(`Browser QR Link copied: ${url}`);
+                    }}
+                    className="flex items-center justify-center gap-2 py-2.5 bg-stone-50 text-stone-600 rounded-xl text-[10px] font-bold hover:bg-stone-100 transition-all border border-stone-100"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Web Link
+                  </button>
+                  <a 
+                    href={`/order/${table.number}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-2.5 bg-stone-50 text-stone-600 rounded-xl text-[10px] font-bold hover:bg-stone-100 transition-all border border-stone-100"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Live View
+                  </a>
+                </div>
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/order/${table.number}`;
+                    const url = `https://t.me/${TELEGRAM_BOT_USERNAME}/app?startapp=${table.number}`;
                     navigator.clipboard.writeText(url);
-                    alert(`QR Link copied to clipboard: ${url}`);
+                    alert(`Telegram Deep Link copied: ${url}\n Use this for your bot buttons!`);
                   }}
-                  className="flex items-center justify-center gap-2 py-2.5 bg-stone-50 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-100 transition-all"
+                  className="flex items-center justify-center gap-2 py-3 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold hover:bg-amber-100 transition-all border border-amber-100"
                 >
-                  <Download className="w-4 h-4" />
-                  QR Link
+                  <QrCode className="w-4 h-4" />
+                  Copy Telegram Bot Link
                 </button>
-                <a 
-                  href={`/order/${table.number}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 py-2.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold hover:bg-amber-100 transition-all"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Live View
-                </a>
               </div>
+
             </motion.div>
           )})}
           {filteredTables.length === 0 && (

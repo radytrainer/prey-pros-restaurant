@@ -55,13 +55,14 @@ export const CustomerMenu: React.FC = () => {
   const previousOrders = React.useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
-    // Subscribe to all active orders to calculate kitchen load
+    // Only subscribe to anonymous orders to calculate guest kitchen load if not logged in
+    const currentUserId = profile?.uid || user?.uid || 'anonymous';
     const unsubscribe = subscribeToOrders((orders) => {
       const active = orders.filter(o => o.status === 'pending' || o.status === 'preparing');
       setActiveOrdersCount(active.length);
-    });
+    }, { userId: currentUserId });
     return () => unsubscribe();
-  }, []);
+  }, [profile?.uid, user?.uid]);
 
   useEffect(() => {
     getMenuItems().then(setItems);
@@ -76,7 +77,11 @@ export const CustomerMenu: React.FC = () => {
 
   useEffect(() => {
     if (!tableId) return;
-    const filters = { tableNumber: tableId.trim() };
+    const currentUserId = profile?.uid || user?.uid || 'anonymous';
+    const filters = { 
+      tableNumber: tableId.trim(),
+      userId: currentUserId 
+    };
     
     const unsubscribe = subscribeToOrders((newOrders) => {
       // Sort orders by creation date
@@ -107,7 +112,7 @@ export const CustomerMenu: React.FC = () => {
     }, filters);
     
     return () => unsubscribe();
-  }, [tableId]);
+  }, [tableId, profile?.uid, user?.uid]);
 
   const categories = ['All', ...new Set(items.map(i => i.category))];
   const timeCategories: (TimeCategory | 'All')[] = ['All', 'Morning', 'Afternoon', 'Evening', 'Night'];

@@ -12,7 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.png', 'pwa-192.png', 'pwa-512.png', 'khqr.png'],
         manifest: {
           name: 'Prey Pros Restaurant',
           short_name: 'Prey Pros',
@@ -45,7 +45,7 @@ export default defineConfig(({mode}) => {
           type: 'module'
         },
         workbox: {
-          globPatterns: [], // Disable glob patterns in dev to avoid warnings
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,

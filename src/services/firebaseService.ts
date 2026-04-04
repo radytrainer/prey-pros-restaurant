@@ -165,11 +165,14 @@ export const subscribeToOrders = (callback: (orders: Order[]) => void, filters?:
   
   if (filters?.userId) {
     q = query(q, where('userId', '==', filters.userId));
-  } else if (filters?.tableNumber) {
+  }
+  
+  if (filters?.tableNumber) {
     q = query(q, where('tableNumber', '==', filters.tableNumber));
-  } else {
-    // Only use server-side ordering if no filters are present to avoid composite index requirements
-    // Composite indexes are required for where() + orderBy() on different fields
+  }
+
+  // If no specific filters, add default ordering
+  if (!filters?.userId && !filters?.tableNumber) {
     q = query(q, orderBy('createdAt', 'desc'));
   }
 

@@ -86,18 +86,23 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if (resource.data.userId == 'anonymous') || (isAuthenticated() && (request.auth.uid == resource.data.userId || isStaff()));
-      allow create: if isValidOrder(request.resource.data);
-      allow update: if isStaff() && isValidOrder(request.resource.data);
+      // Allow any user to read orders (essential for real-time table status tracking)
+      // and allow anyone to create an order without logging in.
+      allow read, create: if true;
+      // Only staff/admin can update orders (mark as preparing, ready, etc.)
+      allow update: if isStaff();
     }
 
     match /tables/{tableId} {
+      // Allow any user to read table availability
       allow read: if true;
+      // Only admin can manage the physical tables
       allow write: if isAdmin();
     }
 
     match /sales/{saleId} {
       allow read: if isAdmin();
+      // Sales are generated when orders are completed by staff
       allow create: if isStaff();
     }
 

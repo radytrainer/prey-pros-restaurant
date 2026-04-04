@@ -174,6 +174,17 @@ export const Login: React.FC = () => {
             {isSignUp ? 'Sign In' : 'Create One'}
           </button>
         </p>
+
+        <div className="mt-8 pt-8 border-t border-gray-100 flex flex-col items-center gap-4">
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Just Dining? / សម្រាប់ភ្ញៀវ</p>
+          <button
+            onClick={() => navigate('/order/1')}
+            className="flex items-center gap-2 text-indigo-600 font-bold hover:underline group"
+          >
+            Browse Menu as Guest / មើលមុខម្ហូបជាភ្ញៀវ
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
       </motion.div>
     </div>
   );

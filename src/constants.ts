@@ -287,7 +287,7 @@ export const RESTAURANT_LOCATION = {
   lng: 104.8866719
 };
 
-export const TELEGRAM_BOT_USERNAME = 'PreyProsBot'; // Change this to your bot's username
+export const TELEGRAM_BOT_USERNAME = 'preypros_restaurant_bot'; // Change this to your bot's username
 
 
 

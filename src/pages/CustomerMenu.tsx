@@ -21,11 +21,16 @@ import {
   Download,
   Copy,
   AlertCircle,
-  MapPin
+  MapPin,
+  Send,
+  ExternalLink
 } from 'lucide-react';
+
+
 import { getMenuItems, createOrder, subscribeToOrders } from '../services/firebaseService';
 import { useAuth } from '../components/AuthContext';
-import { RESTAURANT_LOCATION } from '../constants';
+import { RESTAURANT_LOCATION, TELEGRAM_BOT_USERNAME } from '../constants';
+
 import type { MenuItem, OrderItem, Order, PaymentMethod, TimeCategory } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -382,6 +387,33 @@ Thank you for choosing Prey Pros!
           </button>
         </div>
       </header>
+      
+      {/* Telegram Bridge Banner - Only show if in browser */}
+      {!tg && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-600/5 border-b border-amber-600/10 px-6 py-3 flex items-center justify-between gap-4 sticky top-[72px] z-20 backdrop-blur-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200">
+              <Send className="w-5 h-5 text-white rotate-12" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-stone-900 leading-tight">Order via Telegram Bot</p>
+              <p className="text-[10px] text-stone-500 font-medium">For a better experience & live updates</p>
+            </div>
+          </div>
+          <a 
+            href={`https://t.me/${TELEGRAM_BOT_USERNAME}/app?startapp=${tableId}`}
+            className="px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all flex items-center gap-2 shadow-lg shadow-stone-200"
+          >
+            Open in Bot
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </motion.div>
+      )}
+
 
       {/* Main Content */}
       <main className={`flex-1 p-6 space-y-8 max-w-2xl mx-auto w-full ${cart.length > 0 && activeTab === 'menu' ? 'pb-32' : 'pb-10'}`}>

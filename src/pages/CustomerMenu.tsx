@@ -284,11 +284,42 @@ export const CustomerMenu: React.FC = () => {
       setShowPaymentSelection(false);
       setShowConfirmation(true);
       setOrderPlaced(true);
+      
+      // Telegram Notification
+      const telegramBotToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+      if (tg && tg.initDataUnsafe?.user?.id && telegramBotToken) {
+        const message = `
+🔔 *Order Confirmation / ការបញ្ជាក់ការកម្ម៉ង់*
+━━━━━━━━━━━━━━━━━━
+📍 Table: *${tableId || '1'}*
+💰 Total: *$${total.toFixed(2)}*
+💳 Payment: *${paymentMethod}*
+━━━━━━━━━━━━━━━━━━
+${orderData.items.map(item => `• ${item.quantity}x ${item.name}`).join('\n')}
+━━━━━━━━━━━━━━━━━━
+Our kitchen is now preparing your food.
+Wait time: ${calculateWaitTime()}
+
+Thank you for choosing Prey Pros!
+`;
+        
+        fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: tg.initDataUnsafe.user.id,
+            text: message,
+            parse_mode: 'Markdown'
+          })
+        }).catch(err => console.error('Telegram Notify Error:', err));
+      }
+
       setTimeout(() => setOrderPlaced(false), 5000);
     } catch (error) {
       console.error('Checkout error:', error);
     }
   };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {

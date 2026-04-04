@@ -29,6 +29,8 @@ import { RESTAURANT_LOCATION } from '../constants';
 import type { MenuItem, OrderItem, Order, PaymentMethod, TimeCategory } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
+import { useTelegram } from '../hooks/useTelegram';
+
 
 const getEnglishName = (name: string) => {
   const parts = name.split('/');
@@ -53,8 +55,10 @@ export const CustomerMenu: React.FC = () => {
   const [lastOrder, setLastOrder] = useState<{ items: OrderItem[], total: number } | null>(null);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const { profile, user } = useAuth();
+  const { tg, onMainButton, offMainButton, showMainButton, hideMainButton, setMainButtonText } = useTelegram();
   
   // Geolocation state
+
   const [distance, setDistance] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isVerifyingLocation, setIsVerifyingLocation] = useState(true);
@@ -175,6 +179,38 @@ export const CustomerMenu: React.FC = () => {
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  // Telegram Main Button Effect
+  useEffect(() => {
+    if (!tg) return;
+
+    const isOrderDisabled = isVerifyingLocation || !!locationError || (distance !== null && distance > ALLOWED_DISTANCE);
+    
+    if (cart.length > 0 && !isOrderDisabled && activeTab === 'menu') {
+      const totalPrice = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
+      setMainButtonText(`Checkout Order ($${totalPrice.toFixed(2)})`);
+      showMainButton();
+    } else {
+      hideMainButton();
+    }
+  }, [cart, isVerifyingLocation, locationError, distance, activeTab, tg]);
+
+  useEffect(() => {
+    if (!tg) return;
+    
+    const onMainButtonClick = () => {
+      if (showPaymentSelection) {
+        handleCheckout();
+      } else {
+        setIsCartOpen(true);
+        setShowPaymentSelection(true);
+      }
+    };
+
+    onMainButton(onMainButtonClick);
+    return () => offMainButton(onMainButtonClick);
+  }, [tg, showPaymentSelection, cart]);
+
 
   const categories = ['All', ...new Set(items.map(i => i.category))];
   const timeCategories: (TimeCategory | 'All')[] = ['All', 'Morning', 'Afternoon', 'Evening', 'Night'];

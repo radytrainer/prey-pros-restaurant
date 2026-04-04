@@ -65,3 +65,42 @@ export interface Sale {
   amount: number;
   createdAt: string;
 }
+
+declare global {
+  interface Window {
+    Telegram: {
+      WebApp: {
+        ready: () => void;
+        expand: () => void;
+        close: () => void;
+        MainButton: {
+          text: string;
+          color: string;
+          show: () => void;
+          hide: () => void;
+          isActive: boolean;
+          isVisible: boolean;
+          onClick: (cb: () => void) => void;
+          offClick: (cb: () => void) => void;
+          enable: () => void;
+          disable: () => void;
+          setText: (text: string) => void;
+          showProgress: (leaveActive: boolean) => void;
+          hideProgress: () => void;
+        };
+        initDataUnsafe: {
+          user?: {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+          };
+        };
+        setHeaderColor: (color: string) => void;
+        setBackgroundColor: (color: string) => void;
+        enableClosingConfirmation: () => void;
+      };
+    };
+  }
+}
+
